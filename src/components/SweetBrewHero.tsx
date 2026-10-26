@@ -1103,7 +1103,7 @@ export const SweetBrewHero: React.FC<SweetBrewHeroProps> = ({
               <div className="cinema-invite-card">
                 <div className="cinema-clock-pill">
                   <i className="open-dot" />
-                  <span>RISET SKRIPSI S1 PSIKOLOGI UGM</span>
+                  <span>TUGAS METODE PENELITIAN KUANTITATIF S1 PSIKOLOGI UGM</span>
                 </div>
                 <h2 className="cinema-invite-headline">
                   Mari bantu kami dengan{" "}
@@ -1154,7 +1154,7 @@ export const SweetBrewHero: React.FC<SweetBrewHeroProps> = ({
           <div className="start-splash-inner">
             <span className="start-kicker">
               <i className="open-dot" aria-hidden="true" />
-              Riset Skripsi &middot; Psikologi UGM
+              Tugas Metode Penelitian Kuantitatif &middot; Psikologi UGM
             </span>
 
             <h1 className="start-title">
@@ -1201,7 +1201,7 @@ export const SweetBrewHero: React.FC<SweetBrewHeroProps> = ({
         aria-hidden="true"
       >
         <div className="monument-kicker">
-          <span>SKRIPSI S1 PSIKOLOGI UGM</span>
+          <span>TUGAS METODE PENELITIAN KUANTITATIF S1 PSIKOLOGI UGM</span>
           <span>&bull;</span>
           <span>{cubesDropped} GULA BATU LARUT</span>
         </div>

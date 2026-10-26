@@ -276,7 +276,7 @@ export function App() {
     },
     done: {
       title: "Struk takaranmu siap.",
-      lede: "Jawabanmu sudah terekam untuk riset skripsi Fakultas Psikologi UGM.",
+      lede: "Jawabanmu sudah terekam untuk Tugas Metode Penelitian Kuantitatif Fakultas Psikologi UGM.",
     },
   }[activeTab];
 
@@ -372,7 +372,7 @@ export function App() {
               sebelah catatanmu.
             </p>
             <p className="about-text">
-              Penelitian tugas akhir ini mengkaji hubungan antara{" "}
+              Penelitian Tugas Metode Penelitian Kuantitatif ini mengkaji hubungan antara{" "}
               <strong>Jumlah Tugas Akademik</strong> dan{" "}
               <strong>Kecenderungan Perilaku Konsumsi Tinggi Gula</strong> pada
               mahasiswa S1 Fakultas Psikologi Universitas Gadjah Mada. Tidak ada
@@ -1027,7 +1027,7 @@ export function App() {
       </main>
 
       <footer className="footer">
-        <p>Kuesioner Skripsi S1 Psikologi UGM, 2026 &middot; Takaran Tugas &amp; Gula</p>
+        <p>Kuesioner Tugas Metode Penelitian Kuantitatif &middot; S1 Psikologi UGM, 2026 &middot; Takaran Tugas &amp; Gula</p>
         <p>Setiap jawaban melarutkan gula batu ke dalam gelas takar riset.</p>
       </footer>
 

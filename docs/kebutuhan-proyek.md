@@ -1,5 +1,5 @@
 # Dokumen Kebutuhan Proyek (Project Requirements)
-## Web Kuesioner Tugas Akhir: Jumlah Tugas Akademik & Konsumsi Tinggi Gula
+## Web Kuesioner Tugas Metode Penelitian Kuantitatif: Jumlah Tugas Akademik & Konsumsi Tinggi Gula
 
 **Judul / Topik Penelitian:**  
 *Jumlah Tugas Akademik dan Kecenderungan Perilaku Konsumsi Tinggi Gula pada Mahasiswa Psikologi UGM*
@@ -7,7 +7,7 @@
 ---
 
 ## 1. Gambaran Umum Sistem (System Overview)
-Aplikasi ini adalah **Web Kuesioner Kustom (Google Form / Google Sheets Wrapper)** yang dirancang khusus untuk pengumpulan data Tugas Akhir (Skripsi).  
+Aplikasi ini adalah **Web Kuesioner Kustom (Google Form / Google Sheets Wrapper)** yang dirancang khusus untuk pengumpulan data Tugas Metode Penelitian Kuantitatif.  
 - **Sisi Responden (Mahasiswa Psikologi UGM):** Mengakses web dengan tampilan modern, ramah pengguna (mobile-friendly), dan bertema sesuai topik penelitian, bukan tampilan kaku seperti Google Form standar.
 - **Sisi Peneliti (Temanmu):** Semua jawaban yang disubmit dari web akan langsung masuk secara otomatis dan *real-time* ke **Google Sheets** milik peneliti, sehingga siap diolah langsung di SPSS, JASP, Jamovi, atau Microsoft Excel tanpa perlu mengurus server atau database berbayar.
 
@@ -72,7 +72,7 @@ Dalam penelitian Psikologi, halaman persetujuan responden (*Informed Consent*) s
 - Skala Likert (misal: *Tidak Pernah, Jarang, Kadang-kadang, Sering, Selalu* atau *Sangat Tidak Setuju – Sangat Setuju*).
 
 ### Tahap 5: Halaman Penutup (Thank You Page)
-- Ucapan terima kasih telah membantu penelitian Tugas Akhir.
+- Ucapan terima kasih telah membantu penelitian Tugas Metode Penelitian Kuantitatif.
 - Ringkasan singkat atau pesan edukatif ringan (opsional, misal *fun fact* tentang gula & stres akademik).
 
 ---

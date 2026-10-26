@@ -53,7 +53,7 @@ export interface ResearchMetadata {
 }
 
 export const RESEARCH_METADATA: ResearchMetadata = {
-  code: "UGM-PSI // SKRIPSI-2026",
+  code: "UGM-PSI // METPEN-KUANTITATIF-2026",
   institution: "Fakultas Psikologi",
   faculty: "Program Studi Sarjana Psikologi",
   university: "Universitas Gadjah Mada",
