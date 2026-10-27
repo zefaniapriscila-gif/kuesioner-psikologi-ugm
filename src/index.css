@@ -693,6 +693,11 @@ ul, ol {
   animation: invite-card-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.cinema-invite-card > .cinema-clock-pill {
+  position: relative;
+  top: -1cm;
+}
+
 @keyframes invite-card-pop {
   0% {
     opacity: 0;
@@ -2659,4 +2664,3 @@ body {
     grid-column: 1 / -1;
   }
 }
-
