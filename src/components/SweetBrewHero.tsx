@@ -1212,8 +1212,8 @@ export const SweetBrewHero: React.FC<SweetBrewHeroProps> = ({
           ))}
         </div>
         <p className="monument-sub">
-          Pernahkah kamu mengonsumsi gula saat lagi banyak tugas? Mari bantu
-          kami dengan mengisi kuesioner ini.
+          Pernahkah kamu mengonsumsi makanan/minuman tinggi gula saat lagi
+          banyak tugas? Mari bantu kami dengan mengisi kuesioner ini.
         </p>
       </div>
 
