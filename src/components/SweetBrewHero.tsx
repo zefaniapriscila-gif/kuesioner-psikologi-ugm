@@ -1203,8 +1203,6 @@ export const SweetBrewHero: React.FC<SweetBrewHeroProps> = ({
       >
         <div className="monument-kicker">
           <span>TUGAS METODE PENELITIAN KUANTITATIF S1 PSIKOLOGI UGM</span>
-          <span>&bull;</span>
-          <span>{cubesDropped} GULA BATU LARUT</span>
         </div>
         <div className="monument-word">
           {"TAKARAN".split("").map((ch, idx) => (
