@@ -1886,14 +1886,12 @@ ul, ol {
 .start-title {
   margin: 0;
   max-width: min(90vw, 760px);
-  font-family: var(--sans);
-  font-weight: 900;
-  font-stretch: 78%;
-  font-size: clamp(28px, 3.8vw, 45px);
-  line-height: 0.96;
-  letter-spacing: -0.02em;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 45px;
+  line-height: 0.9;
+  letter-spacing: -0.045em;
   text-wrap: balance;
-  text-transform: uppercase;
   color: var(--ink);
 }
 
