@@ -373,7 +373,11 @@ export function App() {
             </p>
             <p className="about-text">
               Penelitian Tugas Metode Penelitian Kuantitatif ini mengkaji bagaimana{" "}
-              <strong>Kecenderungan Perilaku Konsumsi Tinggi Gula</strong> pada
+              <strong>
+                Kecenderungan Perilaku Konsumsi Tinggi Gula saat Menghadapi
+                Tuntutan Akademik
+              </strong>{" "}
+              pada
               mahasiswa S1 Fakultas Psikologi Universitas Gadjah Mada. Tidak ada
               jawaban benar maupun salah.
             </p>
