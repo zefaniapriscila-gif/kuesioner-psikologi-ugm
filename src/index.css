@@ -1888,7 +1888,7 @@ ul, ol {
   max-width: min(90vw, 760px);
   font-family: var(--serif);
   font-weight: 500;
-  font-size: 19.6px;
+  font-size: 30px;
   line-height: 0.9;
   letter-spacing: -0.045em;
   text-wrap: balance;
