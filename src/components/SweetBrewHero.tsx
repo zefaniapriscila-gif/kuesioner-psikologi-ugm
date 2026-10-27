@@ -1154,7 +1154,7 @@ export const SweetBrewHero: React.FC<SweetBrewHeroProps> = ({
           <div className="start-splash-inner">
             <span className="start-kicker">
               <i className="open-dot" aria-hidden="true" />
-              Tugas Metode Penelitian Kuantitatif &middot; Psikologi UGM
+              Metode Penelitian Kuantitatif &middot; Psikologi UGM
             </span>
 
             <h1 className="start-title">
