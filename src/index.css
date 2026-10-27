@@ -1885,11 +1885,13 @@ ul, ol {
 
 .start-title {
   margin: 0;
+  max-width: min(90vw, 760px);
   font-family: var(--serif);
   font-weight: 500;
-  font-size: clamp(64px, 13vw, 156px);
-  line-height: 0.9;
-  letter-spacing: -0.045em;
+  font-size: 15px;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-wrap: balance;
   color: var(--ink);
 }
 

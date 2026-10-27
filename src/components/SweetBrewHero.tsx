@@ -1158,7 +1158,8 @@ export const SweetBrewHero: React.FC<SweetBrewHeroProps> = ({
             </span>
 
             <h1 className="start-title">
-              Takaran<em>.</em>
+              Jumlah Tugas Akademik dan Kecenderungan Perilaku Konsumsi Tinggi
+              Gula pada Mahasiswa Psikologi UGM
             </h1>
 
             <p className="start-sub">
