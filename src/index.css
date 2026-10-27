@@ -853,8 +853,6 @@ ul, ol {
 }
 
 .monument-kicker {
-  position: relative;
-  top: -1cm;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1867,6 +1865,8 @@ ul, ol {
 .start-splash-inner > :nth-child(5) { animation-delay: 0.6s; }
 
 .start-kicker {
+  position: relative;
+  top: -1cm;
   display: inline-flex;
   align-items: center;
   gap: 9px;
