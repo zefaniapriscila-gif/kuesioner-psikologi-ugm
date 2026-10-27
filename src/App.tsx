@@ -368,7 +368,7 @@ export function App() {
 
           <div className="about-body">
             <p className="about-lead">
-              Tumpukan tugas di layar laptop, dan segelas manis dingin di
+              Tumpukan tugas di layar laptop dan segelas manis dingin di
               sebelah catatanmu.
             </p>
             <p className="about-text">
