@@ -890,7 +890,8 @@ ul, ol {
 }
 
 .monument-sub {
-  max-width: 46ch;
+  width: min(90vw, 46em);
+  max-width: 100%;
   padding: 9px 20px;
   border-radius: 999px;
   border: 1px solid var(--line);
