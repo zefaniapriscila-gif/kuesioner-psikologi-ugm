@@ -372,8 +372,7 @@ export function App() {
               sebelah catatanmu.
             </p>
             <p className="about-text">
-              Penelitian Tugas Metode Penelitian Kuantitatif ini mengkaji hubungan antara{" "}
-              <strong>Jumlah Tugas Akademik</strong> dan{" "}
+              Penelitian Tugas Metode Penelitian Kuantitatif ini mengkaji bagaimana{" "}
               <strong>Kecenderungan Perilaku Konsumsi Tinggi Gula</strong> pada
               mahasiswa S1 Fakultas Psikologi Universitas Gadjah Mada. Tidak ada
               jawaban benar maupun salah.
