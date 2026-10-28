@@ -244,20 +244,64 @@ export async function submitToGoogleSheets(
 }
 
 export const GOOGLE_APPS_SCRIPT_TEMPLATE = `// Tempel kode ini pada Google Sheets: Extensions -> Apps Script
+// Ganti token di bawah dengan GAS_ADMIN_TOKEN dari .env.local
+var ADMIN_TOKEN = "GANTI_DENGAN_TOKEN_RAHASIA";
+
 function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = JSON.parse(e.postData.contents);
-  
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(Object.keys(data));
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+    var data = JSON.parse(e.postData.contents);
+
+    if (data.action) return handleAdmin(sheet, data);
+
+    var headers = sheet.getLastRow() === 0
+      ? []
+      : sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // Soal baru -> kolom baru ditambahkan di ujung header
+    var missing = Object.keys(data).filter(function(key) {
+      return headers.indexOf(key) === -1;
+    });
+    if (missing.length > 0) {
+      sheet.getRange(1, headers.length + 1, 1, missing.length).setValues([missing]);
+      headers = headers.concat(missing);
+    }
+
+    sheet.appendRow(headers.map(function(header) {
+      return data[header] !== undefined ? data[header] : "";
+    }));
+    return reply({ status: "success" });
+  } finally {
+    lock.releaseLock();
   }
-  
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var row = headers.map(function(header) {
-    return data[header] !== undefined ? data[header] : "";
-  });
-  
-  sheet.appendRow(row);
-  return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+}
+
+function handleAdmin(sheet, data) {
+  if (ADMIN_TOKEN === "GANTI_DENGAN_TOKEN_RAHASIA" || data.token !== ADMIN_TOKEN) {
+    return reply({ status: "forbidden" });
+  }
+  if (data.action === "reset") {
+    sheet.clearContents();
+    return reply({ status: "reset" });
+  }
+  if (data.action === "deleteTest") {
+    var values = sheet.getDataRange().getValues();
+    var col = values[0].indexOf("initials");
+    var removed = 0;
+    for (var i = values.length - 1; i >= 1; i--) {
+      if (col !== -1 && values[i][col] === "TEST") {
+        sheet.deleteRow(i + 1);
+        removed++;
+      }
+    }
+    return reply({ status: "deleted", removed: removed });
+  }
+  return reply({ status: "unknown_action" });
+}
+
+function reply(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }`;

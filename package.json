@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sheet:hapus-test": "node --env-file=.env.local scripts/sheet-admin.mjs deleteTest",
+    "sheet:reset": "node --env-file=.env.local scripts/sheet-admin.mjs reset"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",

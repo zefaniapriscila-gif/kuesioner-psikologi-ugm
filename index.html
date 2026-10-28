@@ -5,7 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Takaran — Kuesioner Tugas &amp; Gula Psikologi UGM</title>
     <meta name="description" content="Kuesioner Tugas Metode Penelitian Kuantitatif S1 Psikologi Universitas Gadjah Mada tentang jumlah tugas akademik dan kecenderungan konsumsi tinggi gula." />
-    <meta name="theme-color" content="#faf5ec" />
+    <meta name="theme-color" content="#eceff2" />
+    <script>
+      // Pick the theme before first paint: saved choice, else the system setting
+      try {
+        var theme = localStorage.getItem("takaran_theme");
+        if (!theme) theme = matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
+        document.documentElement.dataset.theme = theme;
+        if (theme === "night") {
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#0c1130");
+        }
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

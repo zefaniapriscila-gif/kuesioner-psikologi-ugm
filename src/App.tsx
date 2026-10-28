@@ -1,17 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { SweetBrewHero } from "./components/SweetBrewHero";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Beranda } from "./components/Beranda";
 import { BrewCupCompanion } from "./components/BrewCupCompanion";
+import { CubeMark } from "./components/CubeMark";
+import { HasilPenelitian } from "./components/HasilPenelitian";
 import { ResearcherAdminModal } from "./components/ResearcherAdminModal";
 import { soundEngine } from "./lib/soundEngine";
-import {
-  SpeakerHigh,
-  SpeakerSlash,
-  ArrowRight,
-  ArrowsClockwise,
-  Moon,
-  Sun,
-  Table,
-} from "@phosphor-icons/react";
+import { Check, Moon, SpeakerHigh, SpeakerSlash, Sun } from "@phosphor-icons/react";
 import {
   LIKERT_AGREEMENT_OPTIONS,
   LIKERT_FREQUENCY_OPTIONS,
@@ -29,10 +23,189 @@ import {
 } from "./lib/submissionEngine";
 
 type SurveyTab = "profile" | "workload" | "sugar" | "done";
+type StepTab = Exclude<SurveyTab, "done">;
+
+// Pages live in the hash so links can be shared and the back button works
+type View = "beranda" | "kuesioner" | "hasil";
+const viewFromHash = (hash: string): View => {
+  if (hash.startsWith("#/kuesioner") || hash === "#kuesioner" || hash === "#pengantar") {
+    return "kuesioner";
+  }
+  if (hash.startsWith("#/hasil")) return "hasil";
+  return "beranda";
+};
+
+const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const STORAGE_KEY = "ugm_psi_questionnaire_draft_v2";
+const TAB_KEY = "ugm_psi_questionnaire_tab_v2";
+const THEME_KEY = "takaran_theme";
+
+const STEPS: StepTab[] = ["profile", "workload", "sugar"];
+const STEP_NAMES: Record<StepTab, string> = {
+  profile: "Profil & persetujuan",
+  workload: "Tugas kuliah",
+  sugar: "Asupan manis",
+};
+
+const X_IDS = VARIABLE_X_ITEMS.map((i) => i.id);
+const Y_IDS = VARIABLE_Y_ITEMS.map((i) => i.id);
+const SWEET_IDS = SWEET_CATEGORIES.map((c) => c.id);
+
+// Required answers per step, in on-screen order
+const REQUIRED: Record<StepTab, string[]> = {
+  profile: ["consent", "angkatan", "semester", "gender", "age"],
+  workload: X_IDS,
+  sugar: [...SWEET_IDS, ...Y_IDS],
+};
+
+// Chip questions in on-screen order; after a first answer we glide to the next open one
+const CHIP_FLOW: Record<StepTab, string[]> = {
+  profile: ["consent", "angkatan", "semester", "gender", "location"],
+  workload: X_IDS,
+  sugar: [...SWEET_IDS, ...Y_IDS],
+};
+
+const ANGKATAN = ["2021", "2022", "2023", "2024", "2025"];
+const SEMESTERS = ["Semester 2", "Semester 4", "Semester 6", "Semester 8+"];
+const GENDERS = ["Perempuan", "Laki-laki"];
+const LOCATIONS = ["Kamar kos / rumah", "Perpustakaan kampus", "Kafe / coffee shop"];
+
+interface ChoiceOption<T extends string | number> {
+  value: T;
+  label: string;
+  hint?: string;
+}
+
+const toOptions = (values: string[]): ChoiceOption<string>[] =>
+  values.map((v) => ({ value: v, label: v }));
+
+const AGREEMENT: ChoiceOption<number>[] = LIKERT_AGREEMENT_OPTIONS.map((o) => ({
+  value: o.value,
+  label: o.fullLabel,
+}));
+
+const FREQUENCY: ChoiceOption<number>[] = LIKERT_FREQUENCY_OPTIONS.map((o) => ({
+  value: o.value,
+  label: o.fullLabel,
+  hint: o.description,
+}));
+
+const isAnswered = (s: QuestionnaireState, qid: string): boolean => {
+  switch (qid) {
+    case "consent":
+      return s.hasConsented;
+    case "angkatan":
+      return !!s.demographics.angkatan;
+    case "semester":
+      return !!s.demographics.semester;
+    case "gender":
+      return !!s.demographics.gender;
+    case "location":
+      return !!s.demographics.studyLocation;
+    case "age":
+      return !!(s.demographics.age || "").trim();
+    default:
+      return (
+        s.variableXAnswers[qid] != null ||
+        s.sweetCategoryFrequency[qid] != null ||
+        s.variableYAnswers[qid] != null
+      );
+  }
+};
+
+const setDemo =
+  (patch: Partial<DemographicsData>) =>
+  (prev: QuestionnaireState): QuestionnaireState => ({
+    ...prev,
+    demographics: { ...prev.demographics, ...patch },
+  });
+
+const scrollBehavior = (): ScrollBehavior => (prefersReducedMotion() ? "auto" : "smooth");
+
+// Researcher tools (sample fill, data panel) stay out of respondents' way.
+// Open the site with ?peneliti to show them.
+const detectResearcher = () => {
+  if (import.meta.env.DEV) return true;
+  try {
+    return new URLSearchParams(window.location.search).has("peneliti");
+  } catch {
+    return false;
+  }
+};
+
+interface ChoiceRowProps<T extends string | number> {
+  qid: string;
+  label: string;
+  text?: string;
+  hint?: string;
+  options: ChoiceOption<T>[];
+  value: T | undefined;
+  isMissing: boolean;
+  variant?: string;
+  onPick: (value: T) => void;
+}
+
+function ChoiceRow<T extends string | number>({
+  qid,
+  label,
+  text,
+  hint,
+  options,
+  value,
+  isMissing,
+  variant = "",
+  onPick,
+}: ChoiceRowProps<T>) {
+  const textId = `${qid}-text`;
+  return (
+    <div
+      className={`q-item ${isMissing ? "is-missing" : ""}`}
+      data-qid={qid}
+      role="group"
+      aria-labelledby={text ? textId : undefined}
+      aria-label={text ? undefined : label}
+    >
+      <span className="q-num">
+        {label}
+        {isMissing && <em className="q-missing">Belum dijawab</em>}
+      </span>
+      {text && (
+        <p className="q-text" id={textId}>
+          {text}
+        </p>
+      )}
+      {hint && <p className="q-hint">{hint}</p>}
+      <div className={`chips ${variant}`}>
+        {options.map((opt) => {
+          const selected = value === opt.value;
+          return (
+            <button
+              key={String(opt.value)}
+              type="button"
+              aria-pressed={selected}
+              className={`chip ${opt.hint ? "chip-has-hint" : ""} ${selected ? "is-selected" : ""}`}
+              onClick={() => onPick(opt.value)}
+            >
+              <span>{opt.label}</span>
+              {opt.hint && <small className="chip-hint">{opt.hint}</small>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function App() {
+  const isResearcher = useMemo(detectResearcher, []);
+  const [view, setView] = useState<View>(() => viewFromHash(window.location.hash));
+  // The intro plays once per visit, and only when the visit starts on the beranda
+  const [introDone, setIntroDone] = useState<boolean>(
+    () => viewFromHash(window.location.hash) !== "beranda" || prefersReducedMotion()
+  );
+  const resumeOnOpen = useRef(false);
+
   const [state, setState] = useState<QuestionnaireState>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -45,17 +218,28 @@ export function App() {
     return INITIAL_QUESTIONNAIRE_STATE;
   });
 
-  const [activeTab, setActiveTab] = useState<SurveyTab>("profile");
-  const [isNightMode, setIsNightMode] = useState<boolean>(false);
-  const [replayCount, setReplayCount] = useState<number>(0);
-  const [isIntroPlaying, setIsIntroPlaying] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<SurveyTab>(() => {
+    try {
+      const saved = localStorage.getItem(TAB_KEY);
+      if (saved && (STEPS as string[]).includes(saved)) return saved as StepTab;
+    } catch {
+      // ignore
+    }
+    return "profile";
+  });
+  const [isNightMode, setIsNightMode] = useState<boolean>(
+    () => document.documentElement.dataset.theme === "night"
+  );
+  const [isSoundOn, setIsSoundOn] = useState<boolean>(() => !soundEngine.isMuted);
   const [isTucked, setIsTucked] = useState<boolean>(false);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isNudged, setIsNudged] = useState<boolean>(false);
   const [isSentFlare, setIsSentFlare] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [missing, setMissing] = useState<Set<string>>(() => new Set());
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
-  const [isAudioUnlocked, setIsAudioUnlocked] = useState<boolean>(() => soundEngine.isUnlocked());
+  const [shareNote, setShareNote] = useState<string>("");
   const [receipt, setReceipt] = useState<{
     submissionId: string;
     timestamp: string;
@@ -63,14 +247,12 @@ export function App() {
   } | null>(null);
 
   const surveyRef = useRef<HTMLElement>(null);
+  const noteRef = useRef<HTMLDivElement>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const glideTimer = useRef<number>(0);
 
-  useEffect(() => {
-    return soundEngine.onUnlockChange((unlocked) => {
-      setIsAudioUnlocked(unlocked);
-    });
-  }, []);
-
-  // Auto-save draft to localStorage
+  // Auto-save draft and current step to localStorage
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -79,6 +261,46 @@ export function App() {
     }
   }, [state]);
 
+  useEffect(() => {
+    if (activeTab === "done") return;
+    try {
+      localStorage.setItem(TAB_KEY, activeTab);
+    } catch {
+      // ignore
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = isNightMode ? "night" : "day";
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", isNightMode ? "#0c1130" : "#eceff2");
+  }, [isNightMode]);
+
+  useEffect(() => {
+    const onNav = () => setView(viewFromHash(window.location.hash));
+    window.addEventListener("popstate", onNav);
+    window.addEventListener("hashchange", onNav);
+    return () => {
+      window.removeEventListener("popstate", onNav);
+      window.removeEventListener("hashchange", onNav);
+    };
+  }, []);
+
+  // Browsers only allow audio after a gesture: wake the sound engine on the first one
+  useEffect(() => {
+    const wake = () => {
+      if (!soundEngine.isMuted) soundEngine.unlock();
+    };
+    window.addEventListener("pointerdown", wake, { once: true });
+    window.addEventListener("keydown", wake, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", wake);
+      window.removeEventListener("keydown", wake);
+      window.clearTimeout(glideTimer.current);
+    };
+  }, []);
+
   // Tuck masthead on scroll down, show on scroll up
   useEffect(() => {
     let lastY = window.scrollY;
@@ -86,6 +308,7 @@ export function App() {
       const y = window.scrollY;
       const dy = y - lastY;
       lastY = y;
+      setIsScrolled(y > 8);
       if (y < 140 || dy < -4) setIsTucked(false);
       else if (dy > 6) setIsTucked(true);
     };
@@ -101,7 +324,7 @@ export function App() {
     });
   };
 
-  // Calculate overall progress (0..1) to fill the Sweet Brew Cup above the sheet
+  // Overall progress (0..1) fills the cup above the sheet
   const { riseProgress, answeredCount, totalCount } = useMemo(() => {
     const totalPoints =
       1 + // consent
@@ -136,22 +359,168 @@ export function App() {
     };
   }, [state, activeTab]);
 
-  const updateDemo = (patch: Partial<DemographicsData>) => {
-    setErrorMsg("");
-    triggerCupNudge();
-    setState((prev) => ({
-      ...prev,
-      demographics: { ...prev.demographics, ...patch },
-    }));
-  };
+  const stepStats = useMemo(() => {
+    const stats = {} as Record<StepTab, { done: number; total: number }>;
+    STEPS.forEach((tab) => {
+      stats[tab] = {
+        done: REQUIRED[tab].filter((id) => isAnswered(state, id)).length,
+        total: REQUIRED[tab].length,
+      };
+    });
+    return stats;
+  }, [state]);
+
+  const pct = Math.round(riseProgress * 100);
 
   const scrollToSurvey = () => {
-    surveyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    surveyRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+  };
+
+  const scrollToNote = () => {
+    const el = noteRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 96;
+    window.scrollTo({ top, behavior: scrollBehavior() });
+  };
+
+  const scrollToQuestion = (qid: string, focus = false) => {
+    const el = document.querySelector<HTMLElement>(`[data-qid="${qid}"]`);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    window.scrollTo({
+      top: window.scrollY + rect.top - window.innerHeight * 0.22,
+      behavior: scrollBehavior(),
+    });
+    if (focus) el.querySelector<HTMLElement>("button, input")?.focus({ preventScroll: true });
+  };
+
+  const clearMissing = (qid: string) => {
+    setMissing((m) => {
+      if (!m.has(qid)) return m;
+      const next = new Set(m);
+      next.delete(qid);
+      return next;
+    });
+  };
+
+  // After a first answer, bring the next unanswered question into view if it is off-screen
+  const glideToNext = (qid: string) => {
+    if (activeTab === "done") return;
+    const flow = CHIP_FLOW[activeTab];
+    const idx = flow.indexOf(qid);
+    if (idx < 0) return;
+    window.clearTimeout(glideTimer.current);
+    glideTimer.current = window.setTimeout(() => {
+      const nextId = flow.slice(idx + 1).find((id) => !isAnswered(stateRef.current, id));
+      if (!nextId) return;
+      const el = document.querySelector<HTMLElement>(`[data-qid="${nextId}"]`);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top > 72 && rect.bottom < window.innerHeight - 24) return;
+      scrollToQuestion(nextId);
+    }, 320);
+  };
+
+  const answer = (qid: string, apply: (prev: QuestionnaireState) => QuestionnaireState) => {
+    const wasAnswered = isAnswered(state, qid);
+    triggerCupNudge();
+    setErrorMsg("");
+    clearMissing(qid);
+    setState(apply);
+    if (!wasAnswered) glideToNext(qid);
+  };
+
+  const updateField = (patch: Partial<DemographicsData>, qid?: string) => {
+    setErrorMsg("");
+    if (qid) clearMissing(qid);
+    setState(setDemo(patch));
+  };
+
+  const goToStep = (tab: SurveyTab) => {
+    setErrorMsg("");
+    setMissing(new Set());
+    setActiveTab(tab);
+    requestAnimationFrame(scrollToNote);
+  };
+
+  // Marks every unanswered required question and takes the respondent to the first one
+  const checkStep = (tab: StepTab): boolean => {
+    const open = REQUIRED[tab].filter((id) => !isAnswered(state, id));
+    if (open.length === 0) return true;
+    setMissing(new Set(open));
+    setErrorMsg(
+      open.length === 1 && open[0] === "consent"
+        ? "Pilih persetujuan partisipasi terlebih dahulu."
+        : `Masih ada ${open.length} pertanyaan yang belum dijawab. Yang bertanda merah perlu diisi.`
+    );
+    requestAnimationFrame(() => scrollToQuestion(open[0], true));
+    return false;
+  };
+
+  // Take a returning respondent straight to their first open question
+  const scrollToResumePoint = () => {
+    if (activeTab !== "done" && answeredCount > 0) {
+      const next = REQUIRED[activeTab].find((id) => !isAnswered(state, id));
+      if (next) scrollToQuestion(next);
+      else scrollToNote();
+      return;
+    }
+    scrollToSurvey();
+  };
+
+  const resumeSurvey = () => {
+    soundEngine.playIceClink();
+    scrollToResumePoint();
+  };
+
+  const navigate = (next: View) => {
+    if (next === view) {
+      window.scrollTo({ top: 0, behavior: scrollBehavior() });
+      return;
+    }
+    const url =
+      next === "beranda"
+        ? window.location.pathname + window.location.search
+        : `#/${next}`;
+    window.history.pushState(null, "", url);
+    setView(next);
+  };
+
+  const openKuesioner = () => {
+    soundEngine.playIceClink();
+    resumeOnOpen.current = activeTab !== "done" && answeredCount > 0;
+    navigate("kuesioner");
+  };
+
+  // A new page starts at its top, unless the respondent is picking up where they left off
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    if (view === "kuesioner" && resumeOnOpen.current) {
+      resumeOnOpen.current = false;
+      requestAnimationFrame(scrollToResumePoint);
+    }
+  }, [view]);
+
+  const toggleSound = () => {
+    const muted = soundEngine.toggleMute();
+    setIsSoundOn(!muted);
+  };
+
+  const toggleTheme = () => {
+    const next = !isNightMode;
+    setIsNightMode(next);
+    try {
+      localStorage.setItem(THEME_KEY, next ? "night" : "day");
+    } catch {
+      // ignore
+    }
+    soundEngine.playIceClink();
   };
 
   const handleQuickFill = () => {
     triggerCupNudge();
     setErrorMsg("");
+    setMissing(new Set());
     const vx: Record<string, number> = {};
     VARIABLE_X_ITEMS.forEach((item, i) => {
       vx[item.id] = [4, 3, 2, 4, 3, 2, 4, 3][i % 8];
@@ -192,47 +561,8 @@ export function App() {
     });
   };
 
-  const handleNextFromProfile = () => {
-    if (!state.hasConsented) {
-      setErrorMsg("Pilih persetujuan partisipasi terlebih dahulu.");
-      return;
-    }
-    if (
-      !state.demographics.angkatan ||
-      !state.demographics.semester ||
-      !state.demographics.age ||
-      !state.demographics.gender
-    ) {
-      setErrorMsg("Lengkapi angkatan, semester, usia, dan jenis kelamin.");
-      return;
-    }
-    setErrorMsg("");
-    setActiveTab("workload");
-    scrollToSurvey();
-  };
-
-  const handleNextFromWorkload = () => {
-    if (Object.keys(state.variableXAnswers).length < VARIABLE_X_ITEMS.length) {
-      setErrorMsg(
-        `Masih ada ${
-          VARIABLE_X_ITEMS.length - Object.keys(state.variableXAnswers).length
-        } pernyataan tugas yang belum dipilih.`
-      );
-      return;
-    }
-    setErrorMsg("");
-    setActiveTab("sugar");
-    scrollToSurvey();
-  };
-
   const handleSubmitAll = async () => {
-    if (
-      Object.keys(state.sweetCategoryFrequency).length < SWEET_CATEGORIES.length ||
-      Object.keys(state.variableYAnswers).length < VARIABLE_Y_ITEMS.length
-    ) {
-      setErrorMsg("Lengkapi seluruh pilihan frekuensi dan pernyataan gula terlebih dahulu.");
-      return;
-    }
+    if (!checkStep("sugar")) return;
     setErrorMsg("");
     setIsSubmitting(true);
     try {
@@ -246,25 +576,45 @@ export function App() {
       setIsSentFlare(true);
       setActiveTab("done");
       localStorage.removeItem(STORAGE_KEY);
-      scrollToSurvey();
+      localStorage.removeItem(TAB_KEY);
+      requestAnimationFrame(scrollToNote);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleShare = async () => {
+    const url = window.location.origin + window.location.pathname;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Takaran: kuesioner tugas & gula",
+          text: "Bantu isi kuesioner Metode Penelitian Kuantitatif Psikologi UGM (3–4 menit, anonim).",
+          url,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareNote("Tautan tersalin");
+      window.setTimeout(() => setShareNote(""), 2400);
+    } catch {
+      // share sheet dismissed or clipboard blocked
+    }
+  };
+
   const handleReset = () => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TAB_KEY);
     setState(INITIAL_QUESTIONNAIRE_STATE);
     setReceipt(null);
     setIsSentFlare(false);
-    setActiveTab("profile");
-    scrollToSurvey();
+    goToStep("profile");
   };
 
   const sidebarCopy = {
     profile: {
       title: "Mulai dari meja belajarmu.",
-      lede: "Empat data singkat sebelum kita menakar beban tugas dan asupan manismu.",
+      lede: "Beberapa data singkat sebelum kita menakar beban tugas dan asupan manismu.",
     },
     workload: {
       title: "Seberapa padat minggu ini?",
@@ -280,759 +630,737 @@ export function App() {
     },
   }[activeTab];
 
+  const stepKicker = (tab: StepTab, index: number) => (
+    <div className="note-kicker">
+      <span>Bagian {index} dari 3</span>
+      <span className="note-kicker-count">
+        {stepStats[tab].done} dari {stepStats[tab].total} terjawab
+      </span>
+    </div>
+  );
+
+  const introPlaying = view === "beranda" && !introDone;
+
   return (
     <div id="top">
-      {/* Floating Pill Masthead */}
       <header
-        className={`masthead ${isTucked ? "is-tucked" : ""} ${
-          isIntroPlaying ? "is-hidden-intro" : ""
+        className={`masthead ${isTucked ? "is-tucked" : ""} ${isScrolled ? "is-scrolled" : ""} ${
+          introPlaying ? "is-hidden" : ""
         }`}
       >
-        <button
-          type="button"
-          className="masthead-pill masthead-name"
-          onClick={async () => {
-            soundEngine.unmute();
-            await soundEngine.unlock();
-            setReplayCount((c) => c + 1);
+        <a
+          className="brand"
+          href="#/"
+          aria-label="Takaran, ke beranda"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("beranda");
           }}
-          title="Tuang ulang animasi gelas & gula batu"
         >
-          <span>
-            Psikologi UGM<span className="masthead-surname"> &middot; Tugas &amp; Gula</span>
-          </span>
-        </button>
+          <CubeMark className="brand-mark" />
+          <span className="brand-name">Takaran</span>
+          <span className="brand-sub">Psikologi UGM</span>
+        </a>
 
-        <nav className="masthead-pill masthead-nav" aria-label="Navigasi">
+        <nav className="masthead-nav" aria-label="Navigasi">
+          {view !== "beranda" && (
+            <a
+              className="nav-link"
+              href="#/"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("beranda");
+              }}
+            >
+              Beranda
+            </a>
+          )}
+          {isResearcher && (
+            <button
+              type="button"
+              className="nav-link nav-data"
+              onClick={() => setIsAdminOpen(true)}
+              title="Buka panel data peneliti"
+            >
+              Data
+            </button>
+          )}
           <button
             type="button"
-            className="masthead-sound-pill"
-            onClick={async () => {
-              if (!isAudioUnlocked) {
-                soundEngine.unmute();
-                const ok = await soundEngine.unlock();
-                setIsAudioUnlocked(ok);
-              } else {
-                const muted = soundEngine.toggleMute();
-                setIsAudioUnlocked(!muted);
-              }
-            }}
-            title={isAudioUnlocked ? "Bisukan suara" : "Nyalakan suara"}
-            aria-label={isAudioUnlocked ? "Bisukan suara" : "Nyalakan suara"}
+            className="icon-btn"
+            onClick={toggleSound}
+            aria-pressed={isSoundOn}
+            aria-label="Efek suara"
+            title={isSoundOn ? "Matikan efek suara" : "Nyalakan efek suara"}
           >
-            {isAudioUnlocked ? (
-              <SpeakerHigh size={15} weight="bold" />
+            {isSoundOn ? (
+              <SpeakerHigh size={18} weight="bold" />
             ) : (
-              <SpeakerSlash size={15} weight="bold" />
+              <SpeakerSlash size={18} weight="bold" />
             )}
           </button>
-          <a href="#pengantar" className="nav-link-pengantar">Pengantar</a>
-          <a href="#kuesioner" className="nav-link-kuesioner">Kuesioner</a>
           <button
             type="button"
-            className="nav-btn-sheets"
-            onClick={() => setIsAdminOpen(true)}
-            title="Buka panel Data Sheets"
+            className="icon-btn"
+            onClick={toggleTheme}
+            aria-pressed={isNightMode}
+            aria-label="Mode gelap"
+            title={isNightMode ? "Ganti ke mode siang" : "Ganti ke mode lembur (gelap)"}
           >
-            <span className="nav-sheets-full">Data Sheets</span>
-            <span className="nav-sheets-short">Data</span>
+            {isNightMode ? <Sun size={18} weight="bold" /> : <Moon size={18} weight="bold" />}
           </button>
-          <a className="nav-cta" href="#kuesioner">
-            <i className="open-dot" aria-hidden="true" />
-            <span className="nav-cta-full">Gelasku {Math.round(riseProgress * 100)}%</span>
-            <span className="nav-cta-short">{Math.round(riseProgress * 100)}%</span>
-          </a>
+          {view === "kuesioner" && (
+            <a
+              className="nav-progress"
+              href="#/kuesioner"
+              aria-label={`Ke pertanyaan berikutnya, terisi ${pct}%`}
+              onClick={(e) => {
+                e.preventDefault();
+                resumeSurvey();
+              }}
+            >
+              <i className="cube-dot" aria-hidden="true" />
+              <span className="nav-progress-full">Gelasku {pct}%</span>
+              <span className="nav-progress-short">{pct}%</span>
+            </a>
+          )}
         </nav>
       </header>
 
       <main>
-        {/* Interactive Liquid Sugar, Ice Cubes & Study Workload Hero */}
-        <SweetBrewHero
-          onStartClick={scrollToSurvey}
-          replayTrigger={replayCount}
-          onIntroStateChange={setIsIntroPlaying}
-          isNightMode={isNightMode}
-          onToggleNightMode={() => setIsNightMode((n) => !n)}
-          onReplayIntro={() => setReplayCount((c) => c + 1)}
-        />
+        {view === "beranda" && (
+          <Beranda
+            isNightMode={isNightMode}
+            playIntro={!introDone}
+            resumePercent={activeTab !== "done" && answeredCount > 0 ? pct : 0}
+            onIntroEnd={() => setIntroDone(true)}
+            onOpenKuesioner={openKuesioner}
+            onOpenHasil={() => navigate("hasil")}
+          />
+        )}
 
-        {/* Minimal Editorial About Section */}
-        <section
-          className="section-wrap about-section"
-          id="pengantar"
-          aria-labelledby="aboutTitle"
-        >
-          <h2 className="section-title" id="aboutTitle">
-            Tentang Riset
-          </h2>
+        {view === "hasil" && (
+          <HasilPenelitian onOpenKuesioner={openKuesioner} onBack={() => navigate("beranda")} />
+        )}
 
-          <div className="about-body">
-            <p className="about-lead">
-              Tumpukan tugas di layar laptop dan segelas manis dingin di
-              sebelah catatanmu.
-            </p>
-            <p className="about-text">
-              Penelitian Tugas Metode Penelitian Kuantitatif ini mengkaji bagaimana{" "}
-              <strong>
-                Kecenderungan Perilaku Konsumsi Tinggi Gula saat Menghadapi
-                Tuntutan Akademik
-              </strong>{" "}
-              pada
-              mahasiswa S1 Fakultas Psikologi Universitas Gadjah Mada. Tidak ada
-              jawaban benar maupun salah.
-            </p>
-            <p className="about-aside">
-              Setiap butir jawaban yang kamu pilih akan menambah gula batu dan
-              mengisi gelas takar di atas lembar kuesioner.
-            </p>
-          </div>
+        {view === "kuesioner" && (
+          <>
+            {/* Minimal Editorial About Section */}
+            <section
+              className="section-wrap about-section"
+              id="pengantar"
+              aria-labelledby="aboutTitle"
+            >
+              <h1 className="section-title" id="aboutTitle">
+                Tentang Riset
+              </h1>
 
-          <dl className="about-stack">
-            <div>
-              <dt>Partisipan</dt>
-              <dd>Mahasiswa aktif S1 Psikologi UGM</dd>
-            </div>
-            <div>
-              <dt>Durasi</dt>
-              <dd>Sekitar 3–4 menit (16 pernyataan singkat)</dd>
-            </div>
-            <div>
-              <dt>Apresiasi</dt>
-              <dd>Undian Rp 500.000 (GoPay / ShopeePay) untuk 10 responden</dd>
-            </div>
-            <div>
-              <dt>Kerahasiaan</dt>
-              <dd>Dijamin anonim &amp; progres tersimpan otomatis</dd>
-            </div>
-          </dl>
-        </section>
-
-        {/* Full-bleed Kinetic Marquee with Sugar Cubes & Boba Pearls */}
-        <div className="marquee" aria-hidden="true">
-          <div className="marquee-track">
-            {[0, 1, 2, 3].map((g) => (
-              <div className="marquee-group" key={g}>
-                <span className="marquee-item">Tumpukan Tugas</span>
-                <i className="marquee-cube" />
-                <span className="marquee-item is-outline">Kopi Gula Aren</span>
-                <i className="marquee-boba" />
-                <span className="marquee-item">Kejar Deadline</span>
-                <i className="marquee-cube" />
-                <span className="marquee-item is-outline">Takaran Manis</span>
-                <i className="marquee-boba" />
+              <div className="about-body">
+                <p className="about-lead">
+                  Tumpukan tugas di layar laptop dan segelas manis dingin di
+                  sebelah catatanmu.
+                </p>
+                <p className="about-text">
+                  Penelitian Tugas Metode Penelitian Kuantitatif ini mengkaji bagaimana{" "}
+                  <strong>
+                    Kecenderungan Perilaku Konsumsi Tinggi Gula saat Menghadapi
+                    Tuntutan Akademik
+                  </strong>{" "}
+                  pada mahasiswa S1 Fakultas Psikologi Universitas Gadjah Mada. Tidak ada
+                  jawaban benar maupun salah.
+                </p>
+                <p className="about-aside">
+                  Setiap butir jawaban yang kamu pilih akan menambah gula batu dan
+                  mengisi gelas takar di atas lembar kuesioner.
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* The Questionnaire Scene: Glass Cup fills up with caramel & ice as you answer */}
-        <section
-          className="section-wrap survey-body"
-          id="kuesioner"
-          ref={surveyRef}
-          aria-labelledby="surveyHeading"
-        >
-          {/* Left Sticky Column */}
-          <div className="survey-sidebar">
-            <p className="open-pill">
-              <i className="open-dot" aria-hidden="true" />
-              <span>Tersimpan otomatis di browser</span>
-            </p>
+              <dl className="about-stack">
+                <div>
+                  <dt>Partisipan</dt>
+                  <dd>Mahasiswa aktif S1 Psikologi UGM</dd>
+                </div>
+                <div>
+                  <dt>Durasi</dt>
+                  <dd>Sekitar 3–4 menit (16 pernyataan singkat)</dd>
+                </div>
+                <div>
+                  <dt>Apresiasi</dt>
+                  <dd>Undian saldo GoPay / ShopeePay Rp 50.000 untuk 10 responden</dd>
+                </div>
+                <div>
+                  <dt>Kerahasiaan</dt>
+                  <dd>Dijamin anonim &amp; progres tersimpan otomatis</dd>
+                </div>
+              </dl>
+            </section>
 
-            <h2 className="survey-title" id="surveyHeading">
-              {sidebarCopy.title}
-            </h2>
-            <p className="survey-lede">{sidebarCopy.lede}</p>
-
-            <div className="survey-steps" role="tablist" aria-label="Tahapan kuesioner">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "profile"}
-                className={`step-tab ${activeTab === "profile" ? "is-active" : ""}`}
-                onClick={() => setActiveTab("profile")}
-              >
-                <span className="step-tab-name">1. Profil &amp; Persetujuan</span>
-                <span className="step-tab-count">
-                  {state.hasConsented && state.demographics.angkatan ? "Selesai" : "4 isian"}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "workload"}
-                className={`step-tab ${activeTab === "workload" ? "is-active" : ""}`}
-                onClick={() => setActiveTab("workload")}
-              >
-                <span className="step-tab-name">2. Tugas Kuliah</span>
-                <span className="step-tab-count">
-                  {Object.keys(state.variableXAnswers).length} / {VARIABLE_X_ITEMS.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "sugar"}
-                className={`step-tab ${activeTab === "sugar" ? "is-active" : ""}`}
-                onClick={() => setActiveTab("sugar")}
-              >
-                <span className="step-tab-name">3. Asupan Manis</span>
-                <span className="step-tab-count">
-                  {Object.keys(state.variableYAnswers).length} / {VARIABLE_Y_ITEMS.length}
-                </span>
-              </button>
+            {/* Full-bleed Kinetic Marquee with Sugar Cubes & Boba Pearls */}
+            <div className="marquee" aria-hidden="true">
+              <div className="marquee-track">
+                {[0, 1, 2, 3].map((g) => (
+                  <div className="marquee-group" key={g}>
+                    <span className="marquee-item">Tumpukan Tugas</span>
+                    <i className="marquee-cube" />
+                    <span className="marquee-item is-outline">Kopi Gula Aren</span>
+                    <i className="marquee-boba" />
+                    <span className="marquee-item">Kejar Deadline</span>
+                    <i className="marquee-cube" />
+                    <span className="marquee-item is-outline">Takaran Manis</span>
+                    <i className="marquee-boba" />
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div style={{ marginTop: "24px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <button type="button" className="ghost-btn" onClick={handleQuickFill}>
-                Isi contoh cepat
-              </button>
-              <button
-                type="button"
-                className="ghost-btn"
-                onClick={() => {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                  setTimeout(() => setReplayCount((c) => c + 1), 350);
-                }}
-              >
-                Tuang ulang gelas
-              </button>
-            </div>
-          </div>
+            {/* The Questionnaire Scene: the cup fills up as you answer */}
+            <section
+              className="section-wrap survey-body"
+              id="kuesioner"
+              ref={surveyRef}
+              aria-labelledby="surveyHeading"
+            >
+              {/* Left Sticky Column */}
+              <div className="survey-sidebar">
+                <p className="open-pill">
+                  <i className="cube-dot" aria-hidden="true" />
+                  <span>Tersimpan otomatis di browser</span>
+                </p>
 
-          {/* Right Questionnaire Sheet with Interactive Sweet Brew Cup Companion */}
-          <div
-            className="note-scene"
-            style={{ ["--rise" as string]: riseProgress.toFixed(3) }}
-          >
-            <BrewCupCompanion
-              progress={riseProgress}
-              isNudged={isNudged}
-              isSent={isSentFlare}
-              answeredCount={answeredCount}
-              totalCount={totalCount}
-            />
+                <h2 className="survey-title" id="surveyHeading">
+                  {sidebarCopy.title}
+                </h2>
+                <p className="survey-lede">{sidebarCopy.lede}</p>
 
-            <div className="note">
-              {/* TAB 1: PROFILE & CONSENT */}
-              {activeTab === "profile" && (
-                <>
-                  <div>
-                    <div className="note-kicker">
-                      <span>Bagian 1 dari 3</span>
-                      <span>Informed Consent &amp; Profil</span>
-                    </div>
-                    <p className="note-phrase">
-                      Saya mahasiswa aktif S1 Psikologi UGM dan bersedia ikut
-                      secara sukarela.
-                    </p>
-                  </div>
+                <div className="survey-steps" role="tablist" aria-label="Tahapan kuesioner">
+                  {STEPS.map((tab, i) => {
+                    const st = stepStats[tab];
+                    const complete = activeTab === "done" || st.done === st.total;
+                    return (
+                      <button
+                        key={tab}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === tab}
+                        disabled={activeTab === "done"}
+                        className={`step-tab ${activeTab === tab ? "is-active" : ""}`}
+                        onClick={() => goToStep(tab)}
+                      >
+                        <span className="step-tab-name">
+                          {i + 1}. {STEP_NAMES[tab]}
+                        </span>
+                        <span className={`step-tab-count ${complete ? "is-complete" : ""}`}>
+                          {complete ? (
+                            <>
+                              <Check size={13} weight="bold" aria-hidden="true" /> Selesai
+                            </>
+                          ) : (
+                            `${st.done} / ${st.total}`
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  <div className="q-list">
-                    <div className="q-item">
-                      <span className="q-num">Persetujuan</span>
-                      <div className="chips">
-                        <button
-                          type="button"
-                          className={`chip ${state.hasConsented ? "is-selected" : ""}`}
-                          onClick={() => {
-                            triggerCupNudge();
-                            setErrorMsg("");
-                            setState((prev) => ({
-                              ...prev,
-                              hasConsented: !prev.hasConsented,
-                              consentTimestamp: !prev.hasConsented
-                                ? new Date().toISOString()
-                                : null,
-                            }));
-                          }}
-                        >
-                          Ya, saya setuju &amp; bersedia berpartisipasi
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="q-item">
-                      <span className="q-num">Angkatan</span>
-                      <p className="q-text">Tahun masuk S1 Psikologi UGM</p>
-                      <div className="chips">
-                        {["2021", "2022", "2023", "2024", "2025"].map((yr) => (
-                          <button
-                            key={yr}
-                            type="button"
-                            className={`chip ${
-                              state.demographics.angkatan === yr ? "is-selected" : ""
-                            }`}
-                            onClick={() => updateDemo({ angkatan: yr })}
-                          >
-                            {yr}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="q-item">
-                      <span className="q-num">Semester</span>
-                      <p className="q-text">Semester yang sedang ditempuh</p>
-                      <div className="chips">
-                        {["Semester 2", "Semester 4", "Semester 6", "Semester 8+"].map(
-                          (sem) => (
-                            <button
-                              key={sem}
-                              type="button"
-                              className={`chip ${
-                                state.demographics.semester === sem ? "is-selected" : ""
-                              }`}
-                              onClick={() => updateDemo({ semester: sem })}
-                            >
-                              {sem}
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="q-item">
-                      <span className="q-num">Jenis kelamin</span>
-                      <div className="chips">
-                        {["Perempuan", "Laki-laki"].map((g) => (
-                          <button
-                            key={g}
-                            type="button"
-                            className={`chip ${
-                              state.demographics.gender === g ? "is-selected" : ""
-                            }`}
-                            onClick={() => updateDemo({ gender: g })}
-                          >
-                            {g}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="q-item">
-                      <span className="q-num">Tempat nugas utama</span>
-                      <p className="q-text">Lokasi paling sering saat mengerjakan tugas</p>
-                      <div className="chips">
-                        {[
-                          "Kamar kos / rumah",
-                          "Perpustakaan kampus",
-                          "Kafe / coffee shop",
-                        ].map((loc) => (
-                          <button
-                            key={loc}
-                            type="button"
-                            className={`chip ${
-                              state.demographics.studyLocation === loc
-                                ? "is-selected"
-                                : ""
-                            }`}
-                            onClick={() =>
-                              updateDemo({
-                                studyLocation: loc,
-                                residence: "Yogyakarta",
-                              })
-                            }
-                          >
-                            {loc}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="note-fields">
-                    <div className="field">
-                      <label htmlFor="fInitials">Nama panggilan / inisial (opsional)</label>
-                      <input
-                        id="fInitials"
-                        type="text"
-                        placeholder="Misal: N. Putri"
-                        value={state.demographics.initials}
-                        onChange={(e) => updateDemo({ initials: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label htmlFor="fAge">Usia (tahun)</label>
-                      <input
-                        id="fAge"
-                        type="number"
-                        min={16}
-                        max={35}
-                        placeholder="20"
-                        value={state.demographics.age}
-                        onChange={(e) => updateDemo({ age: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="field field-wide">
-                      <label htmlFor="fWallet">
-                        Nomor GoPay / ShopeePay untuk undian Rp 500.000 (opsional)
-                      </label>
-                      <input
-                        id="fWallet"
-                        type="tel"
-                        placeholder="0812xxxxxxxx (boleh dikosongkan)"
-                        value={state.demographics.ewalletNumber}
-                        onChange={(e) => updateDemo({ ewalletNumber: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  {errorMsg && <p className="field-error">{errorMsg}</p>}
-
-                  <div className="note-send">
-                    <span style={{ fontSize: "14px", color: "var(--ink-3)" }}>
-                      Gelas di atas terisi setiap kali kamu memilih jawaban.
-                    </span>
-                    <button
-                      type="button"
-                      className="note-btn"
-                      onClick={handleNextFromProfile}
-                    >
-                      <i className="note-btn-cube" aria-hidden="true" />
-                      <span>Lanjut ke Tugas Kuliah</span>
+                {isResearcher && activeTab !== "done" && (
+                  <div className="researcher-tools">
+                    <span>Mode peneliti</span>
+                    <button type="button" className="ghost-btn" onClick={handleQuickFill}>
+                      Isi contoh cepat
                     </button>
                   </div>
-                </>
-              )}
+                )}
+              </div>
 
-              {/* TAB 2: ACADEMIC WORKLOAD (VARIABLE X) */}
-              {activeTab === "workload" && (
-                <>
-                  <div>
-                    <div className="note-kicker">
-                      <span>Bagian 2 dari 3</span>
-                      <span>Variabel X &middot; Tugas Akademik</span>
-                    </div>
-                    <p className="note-phrase">
-                      Beban tugas kuliah yang kamu rasakan selama sebulan terakhir.
-                    </p>
-                  </div>
+              {/* Right Questionnaire Sheet with the cup companion */}
+              <div
+                className="note-scene"
+                ref={noteRef}
+                style={{ ["--rise" as string]: riseProgress.toFixed(3) }}
+              >
+                <BrewCupCompanion
+                  progress={riseProgress}
+                  isNudged={isNudged}
+                  isSent={isSentFlare}
+                  answeredCount={answeredCount}
+                  totalCount={totalCount}
+                />
 
-                  {/* 3 Clean Sliders */}
-                  <div style={{ display: "grid", gap: "14px" }}>
-                    {QUANTITATIVE_TASK_METRICS.map((m) => {
-                      const val = state.quantitativeTasks[m.id] ?? m.defaultValue;
-                      return (
-                        <div className="lab-block" key={m.id}>
-                          <div className="lab-row">
-                            <span className="lab-title">{m.label}</span>
-                            <span className="lab-val">
-                              {val} {m.unit}
-                            </span>
+                <div className="note">
+                  {/* TAB 1: PROFILE & CONSENT */}
+                  {activeTab === "profile" && (
+                    <>
+                      <div>
+                        {stepKicker("profile", 1)}
+                        <p className="note-phrase">
+                          Saya mahasiswa aktif S1 Psikologi UGM dan bersedia ikut
+                          secara sukarela.
+                        </p>
+                      </div>
+
+                      <div className="q-list">
+                        <div
+                          className={`q-item ${missing.has("consent") ? "is-missing" : ""}`}
+                          data-qid="consent"
+                        >
+                          <span className="q-num">
+                            Persetujuan
+                            {missing.has("consent") && <em className="q-missing">Belum dipilih</em>}
+                          </span>
+                          <div className="chips">
+                            <button
+                              type="button"
+                              aria-pressed={state.hasConsented}
+                              className={`chip chip-consent ${state.hasConsented ? "is-selected" : ""}`}
+                              onClick={() =>
+                                answer("consent", (prev) => ({
+                                  ...prev,
+                                  hasConsented: !prev.hasConsented,
+                                  consentTimestamp: !prev.hasConsented
+                                    ? new Date().toISOString()
+                                    : null,
+                                }))
+                              }
+                            >
+                              <span className="chip-check" aria-hidden="true">
+                                {state.hasConsented && <Check size={12} weight="bold" />}
+                              </span>
+                              <span>Ya, saya setuju &amp; bersedia berpartisipasi</span>
+                            </button>
                           </div>
+                        </div>
+
+                        <ChoiceRow
+                          qid="angkatan"
+                          label="Angkatan"
+                          text="Tahun masuk S1 Psikologi UGM"
+                          options={toOptions(ANGKATAN)}
+                          value={state.demographics.angkatan}
+                          isMissing={missing.has("angkatan")}
+                          onPick={(v) => answer("angkatan", setDemo({ angkatan: v }))}
+                        />
+
+                        <ChoiceRow
+                          qid="semester"
+                          label="Semester"
+                          text="Semester yang sedang ditempuh"
+                          options={toOptions(SEMESTERS)}
+                          value={state.demographics.semester}
+                          isMissing={missing.has("semester")}
+                          onPick={(v) => answer("semester", setDemo({ semester: v }))}
+                        />
+
+                        <ChoiceRow
+                          qid="gender"
+                          label="Jenis kelamin"
+                          options={toOptions(GENDERS)}
+                          value={state.demographics.gender}
+                          isMissing={missing.has("gender")}
+                          onPick={(v) => answer("gender", setDemo({ gender: v }))}
+                        />
+
+                        <ChoiceRow
+                          qid="location"
+                          label="Tempat nugas utama (opsional)"
+                          text="Lokasi paling sering saat mengerjakan tugas"
+                          options={toOptions(LOCATIONS)}
+                          value={state.demographics.studyLocation}
+                          isMissing={false}
+                          onPick={(v) =>
+                            answer(
+                              "location",
+                              setDemo({ studyLocation: v, residence: "Yogyakarta" })
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="note-fields">
+                        <div
+                          className={`field ${missing.has("age") ? "is-missing" : ""}`}
+                          data-qid="age"
+                        >
+                          <label htmlFor="fAge">
+                            Usia (tahun)
+                            {missing.has("age") && <em className="q-missing">Belum diisi</em>}
+                          </label>
                           <input
-                            type="range"
-                            className="lab-range"
-                            min={m.min}
-                            max={m.max}
-                            step={m.step}
-                            value={val}
-                            onChange={(e) => {
-                              triggerCupNudge();
-                              setState((prev) => ({
-                                ...prev,
-                                quantitativeTasks: {
-                                  ...prev.quantitativeTasks,
-                                  [m.id]: Number(e.target.value),
-                                },
-                              }));
-                            }}
+                            id="fAge"
+                            type="number"
+                            inputMode="numeric"
+                            min={16}
+                            max={35}
+                            placeholder="20"
+                            aria-invalid={missing.has("age")}
+                            value={state.demographics.age}
+                            onChange={(e) => updateField({ age: e.target.value }, "age")}
                           />
                         </div>
-                      );
-                    })}
-                  </div>
 
-                  {/* 8 Statement Rows */}
-                  <div className="q-list">
-                    {VARIABLE_X_ITEMS.map((item, idx) => {
-                      const picked = state.variableXAnswers[item.id];
-                      return (
-                        <div className="q-item" key={item.id}>
-                          <span className="q-num">
-                            Pernyataan 0{idx + 1} &middot; {item.dimension}
-                          </span>
-                          <p className="q-text">{item.text}</p>
-                          <div className="chips chips-likert-agreement">
-                            {LIKERT_AGREEMENT_OPTIONS.map((opt) => (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                className={`chip ${
-                                  picked === opt.value ? "is-selected" : ""
-                                }`}
-                                onClick={() => {
-                                  triggerCupNudge();
-                                  setErrorMsg("");
-                                  setState((prev) => ({
-                                    ...prev,
-                                    variableXAnswers: {
-                                      ...prev.variableXAnswers,
-                                      [item.id]: opt.value,
-                                    },
-                                  }));
-                                }}
-                              >
-                                {opt.fullLabel}
-                              </button>
-                            ))}
-                          </div>
+                        <div className="field">
+                          <label htmlFor="fInitials">Nama panggilan / inisial (opsional)</label>
+                          <input
+                            id="fInitials"
+                            type="text"
+                            autoComplete="nickname"
+                            placeholder="Misal: N. Putri"
+                            value={state.demographics.initials}
+                            onChange={(e) => updateField({ initials: e.target.value })}
+                          />
                         </div>
-                      );
-                    })}
-                  </div>
 
-                  {errorMsg && <p className="field-error">{errorMsg}</p>}
-
-                  <div className="note-send">
-                    <button
-                      type="button"
-                      className="ghost-btn"
-                      onClick={() => {
-                        setActiveTab("profile");
-                        scrollToSurvey();
-                      }}
-                    >
-                      Kembali
-                    </button>
-                    <button
-                      type="button"
-                      className="note-btn"
-                      onClick={handleNextFromWorkload}
-                    >
-                      <i className="note-btn-cube" aria-hidden="true" />
-                      <span>Lanjut ke Asupan Manis</span>
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* TAB 3: SUGAR CONSUMPTION (VARIABLE Y) */}
-              {activeTab === "sugar" && (
-                <>
-                  <div>
-                    <div className="note-kicker">
-                      <span>Bagian 3 dari 3</span>
-                      <span>Variabel Y &middot; Konsumsi Gula</span>
-                    </div>
-                    <p className="note-phrase">
-                      Seberapa sering yang manis-manis menemani jam belajarmu?
-                    </p>
-                  </div>
-
-                  {/* 5 Sweet Categories */}
-                  <div className="q-list">
-                    {SWEET_CATEGORIES.map((cat) => {
-                      const picked = state.sweetCategoryFrequency[cat.id];
-                      return (
-                        <div className="q-item" key={cat.id}>
-                          <span className="q-num">
-                            Frekuensi &middot; {cat.sugarEstimate}
-                          </span>
-                          <p className="q-text">{cat.name}</p>
-                          <div className="chips chips-likert-frequency">
-                            {LIKERT_FREQUENCY_OPTIONS.map((opt) => (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                className={`chip ${
-                                  picked === opt.value ? "is-selected" : ""
-                                }`}
-                                onClick={() => {
-                                  triggerCupNudge();
-                                  setErrorMsg("");
-                                  setState((prev) => ({
-                                    ...prev,
-                                    sweetCategoryFrequency: {
-                                      ...prev.sweetCategoryFrequency,
-                                      [cat.id]: opt.value,
-                                    },
-                                  }));
-                                }}
-                              >
-                                {opt.fullLabel}
-                              </button>
-                            ))}
-                          </div>
+                        <div className="field field-wide">
+                          <label htmlFor="fWallet">
+                            Nomor GoPay / ShopeePay untuk undian (opsional)
+                          </label>
+                          <input
+                            id="fWallet"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="0812xxxxxxxx (boleh dikosongkan)"
+                            value={state.demographics.ewalletNumber}
+                            onChange={(e) => updateField({ ewalletNumber: e.target.value })}
+                          />
                         </div>
-                      );
-                    })}
+                      </div>
 
-                    {/* 8 Sugar Behavior Statements */}
-                    {VARIABLE_Y_ITEMS.map((item, idx) => {
-                      const picked = state.variableYAnswers[item.id];
-                      return (
-                        <div className="q-item" key={item.id}>
-                          <span className="q-num">
-                            Pernyataan 0{idx + 1} &middot; {item.dimension}
-                          </span>
-                          <p className="q-text">{item.text}</p>
-                          <div className="chips chips-likert-agreement">
-                            {LIKERT_AGREEMENT_OPTIONS.map((opt) => (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                className={`chip ${
-                                  picked === opt.value ? "is-selected" : ""
-                                }`}
-                                onClick={() => {
-                                  triggerCupNudge();
-                                  setErrorMsg("");
-                                  setState((prev) => ({
-                                    ...prev,
-                                    variableYAnswers: {
-                                      ...prev.variableYAnswers,
-                                      [item.id]: opt.value,
-                                    },
-                                  }));
-                                }}
-                              >
-                                {opt.fullLabel}
-                              </button>
-                            ))}
-                          </div>
+                      {errorMsg && (
+                        <p className="field-error" role="alert">
+                          {errorMsg}
+                        </p>
+                      )}
+
+                      <div className="note-send">
+                        <span className="note-send-hint">
+                          Gelas di atas terisi setiap kali kamu memilih jawaban.
+                        </span>
+                        <button
+                          type="button"
+                          className="note-btn"
+                          onClick={() => checkStep("profile") && goToStep("workload")}
+                        >
+                          <i className="note-btn-cube" aria-hidden="true" />
+                          <span>Lanjut ke tugas kuliah</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* TAB 2: ACADEMIC WORKLOAD (VARIABLE X) */}
+                  {activeTab === "workload" && (
+                    <>
+                      <div>
+                        {stepKicker("workload", 2)}
+                        <p className="note-phrase">
+                          Beban tugas kuliah yang kamu rasakan selama sebulan terakhir.
+                        </p>
+                      </div>
+
+                      <div className="q-group">
+                        <p className="q-group-title">Perkiraan angka</p>
+                        <div className="lab-stack">
+                          {QUANTITATIVE_TASK_METRICS.map((m) => {
+                            const val = state.quantitativeTasks[m.id] ?? m.defaultValue;
+                            return (
+                              <div className="lab-block" key={m.id}>
+                                <div className="lab-row">
+                                  <label className="lab-title" htmlFor={`range-${m.id}`}>
+                                    {m.label}
+                                  </label>
+                                  <span className="lab-val">
+                                    {val} <small>{m.unit}</small>
+                                  </span>
+                                </div>
+                                <input
+                                  id={`range-${m.id}`}
+                                  type="range"
+                                  className="lab-range"
+                                  min={m.min}
+                                  max={m.max}
+                                  step={m.step}
+                                  value={val}
+                                  aria-valuetext={`${val} ${m.unit}`}
+                                  onChange={(e) => {
+                                    triggerCupNudge();
+                                    setState((prev) => ({
+                                      ...prev,
+                                      quantitativeTasks: {
+                                        ...prev.quantitativeTasks,
+                                        [m.id]: Number(e.target.value),
+                                      },
+                                    }));
+                                  }}
+                                />
+                                <div className="lab-scale" aria-hidden="true">
+                                  <span>{m.min}</span>
+                                  <span>{m.max}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
 
-                  <div className="field field-wide">
-                    <label htmlFor="fNote">
-                      Minuman atau camilan manis andalan saat nugas (opsional)
-                    </label>
-                    <input
-                      id="fNote"
-                      type="text"
-                      placeholder="Misal: Es kopi susu gula aren Less Sugar waktu lembur"
-                      value={state.openNote}
-                      onChange={(e) =>
-                        setState((prev) => ({ ...prev, openNote: e.target.value }))
-                      }
-                    />
-                  </div>
+                      <div className="q-group">
+                        <p className="q-group-title">
+                          Seberapa sesuai pernyataan berikut dengan kondisimu?
+                        </p>
+                        <div className="q-list">
+                          {VARIABLE_X_ITEMS.map((item, idx) => (
+                            <ChoiceRow
+                              key={item.id}
+                              qid={item.id}
+                              label={`Pernyataan ${idx + 1} dari ${VARIABLE_X_ITEMS.length}`}
+                              text={item.text}
+                              options={AGREEMENT}
+                              value={state.variableXAnswers[item.id]}
+                              isMissing={missing.has(item.id)}
+                              variant="chips-likert-agreement"
+                              onPick={(v) =>
+                                answer(item.id, (prev) => ({
+                                  ...prev,
+                                  variableXAnswers: { ...prev.variableXAnswers, [item.id]: v },
+                                }))
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
 
-                  {errorMsg && <p className="field-error">{errorMsg}</p>}
+                      {errorMsg && (
+                        <p className="field-error" role="alert">
+                          {errorMsg}
+                        </p>
+                      )}
 
-                  <div className="note-send">
-                    <button
-                      type="button"
-                      className="ghost-btn"
-                      onClick={() => {
-                        setActiveTab("workload");
-                        scrollToSurvey();
-                      }}
-                    >
-                      Kembali
-                    </button>
-                    <button
-                      type="button"
-                      className="note-btn"
-                      disabled={isSubmitting}
-                      onClick={handleSubmitAll}
-                    >
-                      <i className="note-btn-cube" aria-hidden="true" />
-                      <span>
-                        {isSubmitting ? "Menyimpan takaran..." : "Selesai & Kirim Jawaban"}
-                      </span>
-                    </button>
-                  </div>
-                </>
-              )}
+                      <div className="note-send">
+                        <button type="button" className="ghost-btn" onClick={() => goToStep("profile")}>
+                          Kembali
+                        </button>
+                        <button
+                          type="button"
+                          className="note-btn"
+                          onClick={() => checkStep("workload") && goToStep("sugar")}
+                        >
+                          <i className="note-btn-cube" aria-hidden="true" />
+                          <span>Lanjut ke asupan manis</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
 
-              {/* TAB 4: DONE / STUDY CAFE RECEIPT */}
-              {activeTab === "done" && receipt && (
-                <>
-                  <div>
-                    <div className="note-kicker">
-                      <span>STRUK TAKARAN &middot; {receipt.submissionId}</span>
-                      <span>PSIKOLOGI UGM</span>
-                    </div>
-                    <p className="note-phrase">
-                      Gelasmu sudah penuh. Ini ringkasan beban tugas dan
-                      takaran manismu.
-                    </p>
-                  </div>
+                  {/* TAB 3: SUGAR CONSUMPTION (VARIABLE Y) */}
+                  {activeTab === "sugar" && (
+                    <>
+                      <div>
+                        {stepKicker("sugar", 3)}
+                        <p className="note-phrase">
+                          Seberapa sering yang manis-manis menemani jam belajarmu?
+                        </p>
+                      </div>
 
-                  <div className="detail-numbers">
-                    <div>
-                      <p className="number-value">
-                        {receipt.summary.variableXPercentage}%
+                      <div className="q-group">
+                        <p className="q-group-title">
+                          Dalam sebulan terakhir, seberapa sering kamu mengonsumsi ini?
+                        </p>
+                        <div className="q-list">
+                          {SWEET_CATEGORIES.map((cat, idx) => (
+                            <ChoiceRow
+                              key={cat.id}
+                              qid={cat.id}
+                              label={`Jenis ${idx + 1} dari ${SWEET_CATEGORIES.length}`}
+                              text={cat.name}
+                              hint={`${cat.examples}. Sekitar ${cat.sugarEstimate}.`}
+                              options={FREQUENCY}
+                              value={state.sweetCategoryFrequency[cat.id]}
+                              isMissing={missing.has(cat.id)}
+                              variant="chips-likert-frequency"
+                              onPick={(v) =>
+                                answer(cat.id, (prev) => ({
+                                  ...prev,
+                                  sweetCategoryFrequency: {
+                                    ...prev.sweetCategoryFrequency,
+                                    [cat.id]: v,
+                                  },
+                                }))
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="q-group">
+                        <p className="q-group-title">
+                          Seberapa sesuai pernyataan berikut dengan dirimu?
+                        </p>
+                        <div className="q-list">
+                          {VARIABLE_Y_ITEMS.map((item, idx) => (
+                            <ChoiceRow
+                              key={item.id}
+                              qid={item.id}
+                              label={`Pernyataan ${idx + 1} dari ${VARIABLE_Y_ITEMS.length}`}
+                              text={item.text}
+                              options={AGREEMENT}
+                              value={state.variableYAnswers[item.id]}
+                              isMissing={missing.has(item.id)}
+                              variant="chips-likert-agreement"
+                              onPick={(v) =>
+                                answer(item.id, (prev) => ({
+                                  ...prev,
+                                  variableYAnswers: { ...prev.variableYAnswers, [item.id]: v },
+                                }))
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="field field-wide">
+                        <label htmlFor="fNote">
+                          Minuman atau camilan manis andalan saat nugas (opsional)
+                        </label>
+                        <input
+                          id="fNote"
+                          type="text"
+                          placeholder="Misal: Es kopi susu gula aren less sugar waktu lembur"
+                          value={state.openNote}
+                          onChange={(e) =>
+                            setState((prev) => ({ ...prev, openNote: e.target.value }))
+                          }
+                        />
+                      </div>
+
+                      {errorMsg && (
+                        <p className="field-error" role="alert">
+                          {errorMsg}
+                        </p>
+                      )}
+
+                      <div className="note-send">
+                        <button type="button" className="ghost-btn" onClick={() => goToStep("workload")}>
+                          Kembali
+                        </button>
+                        <button
+                          type="button"
+                          className="note-btn"
+                          disabled={isSubmitting}
+                          onClick={handleSubmitAll}
+                        >
+                          <i className="note-btn-cube" aria-hidden="true" />
+                          <span>{isSubmitting ? "Mengirim jawaban..." : "Kirim jawaban"}</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* TAB 4: DONE / STUDY CAFE RECEIPT */}
+                  {activeTab === "done" && receipt && (
+                    <>
+                      <div>
+                        <div className="note-kicker">
+                          <span>Struk takaran {receipt.submissionId}</span>
+                          <span>Psikologi UGM</span>
+                        </div>
+                        <p className="note-phrase">
+                          Terima kasih, jawabanmu terkirim. Ini ringkasan beban tugas
+                          dan takaran manismu.
+                        </p>
+                      </div>
+
+                      <div className="detail-numbers">
+                        <div>
+                          <p className="number-value">
+                            {receipt.summary.variableXPercentage}%
+                          </p>
+                          <p className="number-label">
+                            Indeks beban tugas ({receipt.summary.variableXCategory})
+                          </p>
+                        </div>
+                        <div>
+                          <p className="number-value">
+                            {receipt.summary.variableYPercentage}%
+                          </p>
+                          <p className="number-label">
+                            Indeks asupan manis ({receipt.summary.variableYCategory})
+                          </p>
+                        </div>
+                        <div>
+                          <p className="number-value">
+                            {state.quantitativeTasks.weekly_assignments_count ?? 5}
+                          </p>
+                          <p className="number-label">Rata-rata tugas per minggu</p>
+                        </div>
+                      </div>
+
+                      <div className="receipt-box">
+                        <div className="receipt-row">
+                          <span>KODE PARTISIPAN</span>
+                          <strong>{receipt.submissionId}</strong>
+                        </div>
+                        <div className="receipt-row">
+                          <span>TEMPAT NUGAS FAVORIT</span>
+                          <strong>{state.demographics.studyLocation || "Kampus / Kos"}</strong>
+                        </div>
+                        <div className="receipt-row">
+                          <span>ASUPAN MANIS UTAMA</span>
+                          <strong>{receipt.summary.topSweetCraving}</strong>
+                        </div>
+                        <div className="receipt-row">
+                          <span>DURASI NUGAS HARIAN</span>
+                          <strong>{state.quantitativeTasks.daily_study_hours ?? 4} Jam / Hari</strong>
+                        </div>
+                      </div>
+
+                      <p className="about-text">
+                        Saat beban kognitif meningkat akibat tenggat tugas, otak
+                        membutuhkan asupan energi cepat dan pelepasan dopamin
+                        singkat—itulah mengapa minuman dan camilan manis terasa
+                        begitu menggoda di tengah lembur.
                       </p>
-                      <p className="number-label">
-                        Indeks beban tugas ({receipt.summary.variableXCategory})
-                      </p>
-                    </div>
-                    <div>
-                      <p className="number-value">
-                        {receipt.summary.variableYPercentage}%
-                      </p>
-                      <p className="number-label">
-                        Indeks asupan manis ({receipt.summary.variableYCategory})
-                      </p>
-                    </div>
-                    <div>
-                      <p className="number-value">
-                        {state.quantitativeTasks.weekly_assignments_count ?? 5}
-                      </p>
-                      <p className="number-label">Rata-rata tugas per minggu</p>
-                    </div>
-                  </div>
 
-                  <div className="receipt-box">
-                    <div className="receipt-row">
-                      <span>KODE PARTISIPAN</span>
-                      <strong>{receipt.submissionId}</strong>
-                    </div>
-                    <div className="receipt-row">
-                      <span>TEMPAT NUGAS FAVORIT</span>
-                      <strong>{state.demographics.studyLocation || "Kampus / Kos"}</strong>
-                    </div>
-                    <div className="receipt-row">
-                      <span>ASUPAN MANIS UTAMA</span>
-                      <strong>{receipt.summary.topSweetCraving}</strong>
-                    </div>
-                    <div className="receipt-row">
-                      <span>DURASI NUGAS HARIAN</span>
-                      <strong>{state.quantitativeTasks.daily_study_hours ?? 4} Jam / Hari</strong>
-                    </div>
-                  </div>
-
-                  <p className="about-text">
-                    Saat beban kognitif meningkat akibat tenggat tugas, otak
-                    membutuhkan asupan energi cepat dan pelepasan dopamin
-                    singkat—itulah mengapa minuman dan camilan manis terasa
-                    begitu menggoda di tengah lembur.
-                  </p>
-
-                  <div className="note-send">
-                    <button
-                      type="button"
-                      className="ghost-btn"
-                      onClick={() => setIsAdminOpen(true)}
-                    >
-                      Lihat tabel data (SPSS / CSV)
-                    </button>
-                    <button type="button" className="note-btn" onClick={handleReset}>
-                      <i className="note-btn-cube" aria-hidden="true" />
-                      <span>Isi untuk responden baru</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </section>
+                      <div className="note-send">
+                        <div className="note-send-group">
+                          <button type="button" className="ghost-btn" onClick={handleReset}>
+                            Isi untuk responden baru
+                          </button>
+                          {isResearcher && (
+                            <button
+                              type="button"
+                              className="ghost-btn"
+                              onClick={() => setIsAdminOpen(true)}
+                            >
+                              Lihat tabel data (SPSS / CSV)
+                            </button>
+                          )}
+                        </div>
+                        <button type="button" className="note-btn" onClick={handleShare}>
+                          <i className="note-btn-cube" aria-hidden="true" />
+                          <span aria-live="polite">{shareNote || "Bagikan ke teman"}</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </section>
+          </>
+        )}
       </main>
 
-      <footer className="footer">
-        <p>Kuesioner Tugas Metode Penelitian Kuantitatif &middot; S1 Psikologi UGM, 2026 &middot; Takaran Tugas &amp; Gula</p>
-        <p>Setiap jawaban melarutkan gula batu ke dalam gelas takar riset.</p>
-      </footer>
+      {view !== "beranda" && (
+        <footer className="footer">
+          <p>Kuesioner Tugas Metode Penelitian Kuantitatif, S1 Psikologi UGM 2026</p>
+          {isResearcher ? (
+            <button type="button" className="footer-link" onClick={() => setIsAdminOpen(true)}>
+              Panel data peneliti
+            </button>
+          ) : (
+            <p>Setiap jawaban menambah satu kubus gula ke gelas riset.</p>
+          )}
+        </footer>
+      )}
 
       <ResearcherAdminModal
         isOpen={isAdminOpen}

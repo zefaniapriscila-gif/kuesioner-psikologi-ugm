@@ -136,7 +136,7 @@ export const ResearcherAdminModal: React.FC<ResearcherAdminModalProps> = ({
               }}
             >
               <span style={{ fontSize: "14px", fontWeight: 650, color: "var(--ink-3)" }}>
-                Kode Extensions &rarr; Apps Script (15 baris)
+                Kode Extensions &rarr; Apps Script
               </span>
               <button type="button" className="ghost-btn" onClick={handleCopyScript}>
                 {copiedScript ? "Tersalin" : "Salin kode"}

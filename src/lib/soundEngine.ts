@@ -5,9 +5,27 @@
 // and warm coffee-shop Rhodes chords in real time.
 // ============================================================================
 
+const MUTE_KEY = "takaran_sound";
+
+const readMutedPref = (): boolean => {
+  try {
+    return localStorage.getItem(MUTE_KEY) === "off";
+  } catch {
+    return false;
+  }
+};
+
+const writeMutedPref = (muted: boolean): void => {
+  try {
+    localStorage.setItem(MUTE_KEY, muted ? "off" : "on");
+  } catch {
+    // ignore
+  }
+};
+
 class SoundEngine {
   private ctx: AudioContext | null = null;
-  public isMuted: boolean = false;
+  public isMuted: boolean = readMutedPref();
   private unlockListeners: Set<(isUnlocked: boolean) => void> = new Set();
   private masterGain: GainNode | null = null;
 
@@ -104,6 +122,7 @@ class SoundEngine {
 
   public unmute(): void {
     this.isMuted = false;
+    writeMutedPref(false);
     if (this.ctx && this.masterGain) {
       this.masterGain.gain.setValueAtTime(1, this.ctx.currentTime);
     }
@@ -112,6 +131,7 @@ class SoundEngine {
 
   public toggleMute(): boolean {
     this.isMuted = !this.isMuted;
+    writeMutedPref(this.isMuted);
     if (this.ctx && this.masterGain) {
       this.masterGain.gain.setValueAtTime(
         this.isMuted ? 0 : 1,
