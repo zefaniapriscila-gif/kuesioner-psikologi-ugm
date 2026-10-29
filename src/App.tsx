@@ -81,8 +81,8 @@ const CHIP_FLOW: Record<StepTab, string[]> = {
   sugar: [...SWEET_IDS, ...Y_IDS],
 };
 
-const ANGKATAN = ["2021", "2022", "2023", "2024", "2025"];
-const SEMESTERS = ["Semester 2", "Semester 4", "Semester 6", "Semester 8+"];
+const ANGKATAN = ["2021", "2022", "2023", "2024", "2025", "2026"];
+const SEMESTERS = ["Semester 1", "Semester 3", "Semester 5", "Semester 7"];
 const GENDERS = ["Perempuan", "Laki-laki"];
 const LOCATIONS = ["Kamar kos / rumah", "Perpustakaan kampus", "Kafe / coffee shop"];
 
@@ -670,7 +670,7 @@ export function App() {
       demographics: {
         initials: "N. Putri",
         angkatan: "2023",
-        semester: "Semester 6",
+        semester: "Semester 5",
         age: "20",
         gender: "Perempuan",
         residence: "Kos / Kontrakan Sendiri",
