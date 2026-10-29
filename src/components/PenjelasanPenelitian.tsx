@@ -135,7 +135,7 @@ export const PenjelasanPenelitian: React.FC<PenjelasanPenelitianProps> = ({
             Tujuan
           </h2>
           <p className="bab-lead">
-            Survei ini dilakukan untuk menganalisa{" "}
+            Survei ini dilakukan untuk mengkaji{" "}
             <mark ref={markRef} className="stabilo">
               kecenderungan konsumsi tinggi gula
             </mark>{" "}
