@@ -39,15 +39,12 @@ export const INITIAL_QUESTIONNAIRE_STATE: QuestionnaireState = {
     age: "",
     gender: "",
     residence: "",
-    isActiveStudent: true,
+    isActiveStudent: null,
     studyLocation: "",
     ewalletType: "GoPay",
     ewalletNumber: "",
   },
-  quantitativeTasks: {
-    weekly_assignments_count: 5,
-    daily_study_hours: 4,
-  },
+  quantitativeTasks: {},
   variableXAnswers: {},
   sweetCategoryFrequency: {},
   variableYAnswers: {},
@@ -57,12 +54,12 @@ export const INITIAL_QUESTIONNAIRE_STATE: QuestionnaireState = {
 export interface ComputedSummary {
   variableXTotalScore: number;
   variableXMaxPossible: number;
-  variableXPercentage: number;
-  variableXCategory: "Ringan" | "Moderat" | "Tinggi";
+  variableXPercentage: number | null;
+  variableXCategory: "Ringan" | "Moderat" | "Tinggi" | "Belum cukup data";
   variableYTotalScore: number;
   variableYMaxPossible: number;
-  variableYPercentage: number;
-  variableYCategory: "Terkendali" | "Moderat" | "Tinggi (Sweet-Seeker)";
+  variableYPercentage: number | null;
+  variableYCategory: "Terkendali" | "Moderat" | "Tinggi (Sweet-Seeker)" | "Belum cukup data";
   recodedVariableX: Record<string, number>;
   recodedVariableY: Record<string, number>;
   topSweetCraving: string;
@@ -73,22 +70,28 @@ export function computeQuestionnaireSummary(
 ): ComputedSummary {
   const recodedVariableX: Record<string, number> = {};
   let variableXTotalScore = 0;
+  let answeredXCount = 0;
 
   for (const item of VARIABLE_X_ITEMS) {
-    const raw = state.variableXAnswers[item.id] ?? 2;
+    const raw = state.variableXAnswers[item.id];
+    if (raw == null) continue;
     // The workload item uses a 5-point agreement scale.
     const recoded = item.isFavorable ? raw : 6 - raw;
     recodedVariableX[item.code] = recoded;
     variableXTotalScore += recoded;
+    answeredXCount += 1;
   }
 
-  const variableXMaxPossible = VARIABLE_X_ITEMS.length * 5;
-  const variableXPercentage = Math.round(
-    (variableXTotalScore / variableXMaxPossible) * 100
-  );
+  const variableXMaxPossible = answeredXCount * 5;
+  const variableXPercentage =
+    answeredXCount > 0
+      ? Math.round((variableXTotalScore / variableXMaxPossible) * 100)
+      : null;
 
-  const variableXCategory: "Ringan" | "Moderat" | "Tinggi" =
-    variableXPercentage < 48
+  const variableXCategory: ComputedSummary["variableXCategory"] =
+    variableXPercentage == null
+      ? "Belum cukup data"
+      : variableXPercentage < 48
       ? "Ringan"
       : variableXPercentage < 75
       ? "Moderat"
@@ -96,31 +99,38 @@ export function computeQuestionnaireSummary(
 
   const recodedVariableY: Record<string, number> = {};
   let variableYTotalScore = 0;
+  let answeredYCount = 0;
 
   for (const item of VARIABLE_Y_ITEMS) {
-    const raw = state.variableYAnswers[item.id] ?? 2;
+    const raw = state.variableYAnswers[item.id];
+    if (raw == null) continue;
     const recoded = item.isFavorable ? raw : 5 - raw;
     recodedVariableY[item.code] = recoded;
     variableYTotalScore += recoded;
+    answeredYCount += 1;
   }
 
-  const variableYMaxPossible = VARIABLE_Y_ITEMS.length * 4;
-  const variableYPercentage = Math.round(
-    (variableYTotalScore / variableYMaxPossible) * 100
-  );
+  const variableYMaxPossible = answeredYCount * 4;
+  const variableYPercentage =
+    answeredYCount > 0
+      ? Math.round((variableYTotalScore / variableYMaxPossible) * 100)
+      : null;
 
-  const variableYCategory: "Terkendali" | "Moderat" | "Tinggi (Sweet-Seeker)" =
-    variableYPercentage < 48
+  const variableYCategory: ComputedSummary["variableYCategory"] =
+    variableYPercentage == null
+      ? "Belum cukup data"
+      : variableYPercentage < 48
       ? "Terkendali"
       : variableYPercentage < 75
       ? "Moderat"
       : "Tinggi (Sweet-Seeker)";
 
   let highestFreq = -1;
-  let topSweetCraving = SWEET_CATEGORIES[0].name;
+  let topSweetCraving = "Belum cukup data";
 
   for (const cat of SWEET_CATEGORIES) {
-    const freq = state.sweetCategoryFrequency[cat.id] ?? 0;
+    const freq = state.sweetCategoryFrequency[cat.id];
+    if (freq == null) continue;
     if (freq > highestFreq) {
       highestFreq = freq;
       topSweetCraving = cat.name;
@@ -169,14 +179,19 @@ export async function submitToGoogleSheets(
     gender: state.demographics.gender,
     residence: state.demographics.residence,
     studyLocation: state.demographics.studyLocation,
-    isActiveStudent: state.demographics.isActiveStudent ? "Ya" : "Tidak",
+    isActiveStudent:
+      state.demographics.isActiveStudent == null
+        ? ""
+        : state.demographics.isActiveStudent
+          ? "Ya"
+          : "Tidak",
     ewalletReward: state.demographics.ewalletNumber
       ? `${state.demographics.ewalletType}: ${state.demographics.ewalletNumber}`
       : "Tidak Mengisi",
     weeklyAssignmentsCount:
-      state.quantitativeTasks[QUANTITATIVE_TASK_METRICS[0].id] ?? 5,
+      state.quantitativeTasks[QUANTITATIVE_TASK_METRICS[0].id] ?? "",
     dailyStudyHours:
-      state.quantitativeTasks[QUANTITATIVE_TASK_METRICS[1].id] ?? 4,
+      state.quantitativeTasks[QUANTITATIVE_TASK_METRICS[1].id] ?? "",
     variableXTotalScore: summary.variableXTotalScore,
     variableXCategory: summary.variableXCategory,
     ...summary.recodedVariableX,

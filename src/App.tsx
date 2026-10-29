@@ -67,9 +67,8 @@ const X_IDS = VARIABLE_X_ITEMS.map((i) => i.id);
 const Y_IDS = VARIABLE_Y_ITEMS.map((i) => i.id);
 const SWEET_IDS = SWEET_CATEGORIES.map((c) => c.id);
 
-// Required answers per step, in on-screen order. Consent is given on its own
-// page, which stays one step behind step 1.
-const REQUIRED: Record<StepTab, string[]> = {
+// Questions per step, used to show progress and resume at the next unanswered item.
+const STEP_QUESTION_IDS: Record<StepTab, string[]> = {
   profile: ["angkatan", "semester", "gender", "age"],
   workload: X_IDS,
   sugar: [...SWEET_IDS, ...Y_IDS],
@@ -433,8 +432,8 @@ export function App() {
     const stats = {} as Record<StepTab, { done: number; total: number }>;
     STEPS.forEach((tab) => {
       stats[tab] = {
-        done: REQUIRED[tab].filter((id) => isAnswered(state, id)).length,
-        total: REQUIRED[tab].length,
+        done: STEP_QUESTION_IDS[tab].filter((id) => isAnswered(state, id)).length,
+        total: STEP_QUESTION_IDS[tab].length,
       };
     });
     return stats;
@@ -550,22 +549,10 @@ export function App() {
     requestAnimationFrame(scrollToNote);
   };
 
-  // Marks every unanswered required question and takes the respondent to the first one
-  const checkStep = (tab: StepTab): boolean => {
-    const open = REQUIRED[tab].filter((id) => !isAnswered(state, id));
-    if (open.length === 0) return true;
-    setMissing(new Set(open));
-    setErrorMsg(
-      `Masih ada ${open.length} pertanyaan yang belum dijawab. Yang bertanda merah perlu diisi.`
-    );
-    requestAnimationFrame(() => scrollToQuestion(open[0], true));
-    return false;
-  };
-
   // Take a returning respondent straight to their first open question
   const scrollToResumePoint = () => {
     if (activeTab !== "done" && answeredCount > 0) {
-      const next = REQUIRED[activeTab].find((id) => !isAnswered(state, id));
+      const next = STEP_QUESTION_IDS[activeTab].find((id) => !isAnswered(state, id));
       if (next) scrollToQuestion(next);
       else scrollToNote();
       return;
@@ -696,7 +683,6 @@ export function App() {
   };
 
   const handleSubmitAll = async () => {
-    if (!checkStep("sugar")) return;
     setErrorMsg("");
     setIsSubmitting(true);
     try {
@@ -908,6 +894,9 @@ export function App() {
                   <i className="cube-dot" aria-hidden="true" />
                   <span>Tersimpan otomatis di browser</span>
                 </p>
+                <p className="survey-lede survey-optional-note">
+                  Semua pertanyaan opsional. Anda dapat melewati pertanyaan dan tetap melanjutkan.
+                </p>
 
                 <h1 className="survey-title" id="surveyHeading">
                   {sidebarCopy.title}
@@ -1090,7 +1079,7 @@ export function App() {
                         <button
                           type="button"
                           className="note-btn"
-                          onClick={() => checkStep("profile") && goToStep("workload")}
+                          onClick={() => goToStep("workload")}
                         >
                           <i className="note-btn-cube" aria-hidden="true" />
                           <span>Lanjut ke tugas kuliah</span>
@@ -1113,6 +1102,7 @@ export function App() {
                         <p className="q-group-title">Perkiraan angka</p>
                         <div className="lab-stack">
                           {QUANTITATIVE_TASK_METRICS.map((m) => {
+                            const hasAnswer = state.quantitativeTasks[m.id] != null;
                             const val = state.quantitativeTasks[m.id] ?? m.defaultValue;
                             return (
                               <div className="lab-block" key={m.id}>
@@ -1121,7 +1111,13 @@ export function App() {
                                     {m.label}
                                   </label>
                                   <span className="lab-val">
-                                    {val} <small>{m.unit}</small>
+                                    {hasAnswer ? (
+                                      <>
+                                        {val} <small>{m.unit}</small>
+                                      </>
+                                    ) : (
+                                      <small>Belum dijawab</small>
+                                    )}
                                   </span>
                                 </div>
                                 <input
@@ -1132,7 +1128,11 @@ export function App() {
                                   max={m.max}
                                   step={m.step}
                                   value={val}
-                                  aria-valuetext={`${val} ${m.unit}`}
+                                  aria-valuetext={
+                                    hasAnswer
+                                      ? `${val} ${m.unit}`
+                                      : "Belum dijawab; geser untuk memilih nilai"
+                                  }
                                   onChange={(e) => {
                                     triggerCupNudge();
                                     setState((prev) => ({
@@ -1188,7 +1188,7 @@ export function App() {
                         <button
                           type="button"
                           className="note-btn"
-                          onClick={() => checkStep("workload") && goToStep("sugar")}
+                          onClick={() => goToStep("sugar")}
                         >
                           <i className="note-btn-cube" aria-hidden="true" />
                           <span>Lanjut ke asupan manis</span>
@@ -1305,7 +1305,9 @@ export function App() {
                       <div className="detail-numbers">
                         <div>
                           <p className="number-value">
-                            {receipt.summary.variableXPercentage}%
+                            {receipt.summary.variableXPercentage == null
+                              ? "—"
+                              : `${receipt.summary.variableXPercentage}%`}
                           </p>
                           <p className="number-label">
                             Indeks beban tugas ({receipt.summary.variableXCategory})
@@ -1313,7 +1315,9 @@ export function App() {
                         </div>
                         <div>
                           <p className="number-value">
-                            {receipt.summary.variableYPercentage}%
+                            {receipt.summary.variableYPercentage == null
+                              ? "—"
+                              : `${receipt.summary.variableYPercentage}%`}
                           </p>
                           <p className="number-label">
                             Indeks asupan manis ({receipt.summary.variableYCategory})
@@ -1321,7 +1325,7 @@ export function App() {
                         </div>
                         <div>
                           <p className="number-value">
-                            {state.quantitativeTasks.weekly_assignments_count ?? 5}
+                            {state.quantitativeTasks.weekly_assignments_count ?? "—"}
                           </p>
                           <p className="number-label">Rata-rata tugas per minggu</p>
                         </div>
@@ -1342,7 +1346,11 @@ export function App() {
                         </div>
                         <div className="receipt-row">
                           <span>DURASI NUGAS HARIAN</span>
-                          <strong>{state.quantitativeTasks.daily_study_hours ?? 4} Jam / Hari</strong>
+                          <strong>
+                            {state.quantitativeTasks.daily_study_hours == null
+                              ? "Belum dijawab"
+                              : `${state.quantitativeTasks.daily_study_hours} Jam / Hari`}
+                          </strong>
                         </div>
                       </div>
 
