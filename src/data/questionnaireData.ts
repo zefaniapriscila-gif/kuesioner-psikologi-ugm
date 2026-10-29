@@ -152,33 +152,6 @@ export const LIKERT_AGREEMENT_5_OPTIONS: LikertOption[] = [
   },
 ];
 
-export const LIKERT_FREQUENCY_OPTIONS: LikertOption[] = [
-  {
-    value: 1,
-    shortLabel: "TP",
-    fullLabel: "Tidak Pernah",
-    description: "0 kali dalam sebulan terakhir",
-  },
-  {
-    value: 2,
-    shortLabel: "JR",
-    fullLabel: "Jarang",
-    description: "1 - 2 kali dalam seminggu",
-  },
-  {
-    value: 3,
-    shortLabel: "SR",
-    fullLabel: "Sering",
-    description: "3 - 5 kali dalam seminggu",
-  },
-  {
-    value: 4,
-    shortLabel: "SL",
-    fullLabel: "Selalu",
-    description: "Hampir setiap hari saat mengerjakan tugas",
-  },
-];
-
 export const QUANTITATIVE_TASK_METRICS: QuantitativeTaskMetric[] = [
   {
     id: "weekly_assignments_count",
@@ -222,39 +195,6 @@ export const VARIABLE_X_ITEMS: ScaleItem[] = [
     dimension: "Kuantitas & Akumulasi Tugas",
     text: "Saya memiliki banyak tugas akademik yang harus diselesaikan.",
     isFavorable: true,
-  },
-];
-
-export const SWEET_CATEGORIES = [
-  {
-    id: "iced_coffee_palm_sugar",
-    name: "Es Kopi Susu Gula Aren / Caramel Latte",
-    examples: "Kopi kenangan, fore, janji jiwa, kafe sekitar kampus",
-    sugarEstimate: "18 - 28g gula / cup",
-  },
-  {
-    id: "boba_milk_tea",
-    name: "Boba, Milk Tea, & Matcha Manis",
-    examples: "Brown sugar boba, thai tea, cheese tea, minuman manis gerai",
-    sugarEstimate: "26 - 38g gula / cup",
-  },
-  {
-    id: "packaged_sweet_drinks",
-    name: "Minuman Kemasan & Teh Manis Siap Minum",
-    examples: "Teh botol/kotak, susu UHT rasa, minuman isotonik/soda di minimarket",
-    sugarEstimate: "15 - 24g gula / botol",
-  },
-  {
-    id: "bakery_dessert",
-    name: "Roti Manis, Donat, Kue, & Es Krim",
-    examples: "Donat, cromboloni, brownies, martabak manis, gelato",
-    sugarEstimate: "20 - 35g gula / porsi",
-  },
-  {
-    id: "chocolate_snacks",
-    name: "Cokelat, Biskuit, & Camilan Manis Meja Belajar",
-    examples: "Wafer cokelat, cookies, permen, sereal manis saat nugas",
-    sugarEstimate: "14 - 22g gula / sajian",
   },
 ];
 

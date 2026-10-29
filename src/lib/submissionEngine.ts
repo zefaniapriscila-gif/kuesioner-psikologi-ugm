@@ -1,7 +1,6 @@
 import {
   VARIABLE_X_ITEMS,
   VARIABLE_Y_ITEMS,
-  SWEET_CATEGORIES,
   QUANTITATIVE_TASK_METRICS,
 } from "../data/questionnaireData";
 
@@ -24,7 +23,6 @@ export interface QuestionnaireState {
   demographics: DemographicsData;
   quantitativeTasks: Record<string, number>;
   variableXAnswers: Record<string, number>;
-  sweetCategoryFrequency: Record<string, number>;
   variableYAnswers: Record<string, number>;
   openNote: string;
 }
@@ -46,7 +44,6 @@ export const INITIAL_QUESTIONNAIRE_STATE: QuestionnaireState = {
   },
   quantitativeTasks: {},
   variableXAnswers: {},
-  sweetCategoryFrequency: {},
   variableYAnswers: {},
   openNote: "",
 };
@@ -62,7 +59,6 @@ export interface ComputedSummary {
   variableYCategory: "Terkendali" | "Moderat" | "Tinggi (Sweet-Seeker)" | "Belum cukup data";
   recodedVariableX: Record<string, number>;
   recodedVariableY: Record<string, number>;
-  topSweetCraving: string;
 }
 
 export function computeQuestionnaireSummary(
@@ -125,18 +121,6 @@ export function computeQuestionnaireSummary(
       ? "Moderat"
       : "Tinggi (Sweet-Seeker)";
 
-  let highestFreq = -1;
-  let topSweetCraving = "Belum cukup data";
-
-  for (const cat of SWEET_CATEGORIES) {
-    const freq = state.sweetCategoryFrequency[cat.id];
-    if (freq == null) continue;
-    if (freq > highestFreq) {
-      highestFreq = freq;
-      topSweetCraving = cat.name;
-    }
-  }
-
   return {
     variableXTotalScore,
     variableXMaxPossible,
@@ -148,7 +132,6 @@ export function computeQuestionnaireSummary(
     variableYCategory,
     recodedVariableX,
     recodedVariableY,
-    topSweetCraving,
   };
 }
 
@@ -195,7 +178,6 @@ export async function submitToGoogleSheets(
     variableXTotalScore: summary.variableXTotalScore,
     variableXCategory: summary.variableXCategory,
     ...summary.recodedVariableX,
-    ...state.sweetCategoryFrequency,
     variableYTotalScore: summary.variableYTotalScore,
     variableYCategory: summary.variableYCategory,
     ...summary.recodedVariableY,

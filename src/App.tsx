@@ -8,9 +8,7 @@ import { Check, Moon, SpeakerHigh, SpeakerSlash, Sun } from "./components/Icons"
 import {
   LIKERT_AGREEMENT_OPTIONS,
   LIKERT_AGREEMENT_5_OPTIONS,
-  LIKERT_FREQUENCY_OPTIONS,
   QUANTITATIVE_TASK_METRICS,
-  SWEET_CATEGORIES,
   VARIABLE_X_ITEMS,
   VARIABLE_Y_ITEMS,
 } from "./data/questionnaireData";
@@ -65,20 +63,19 @@ const STEP_NAMES: Record<StepTab, string> = {
 
 const X_IDS = VARIABLE_X_ITEMS.map((i) => i.id);
 const Y_IDS = VARIABLE_Y_ITEMS.map((i) => i.id);
-const SWEET_IDS = SWEET_CATEGORIES.map((c) => c.id);
 
 // Questions per step, used to show progress and resume at the next unanswered item.
 const STEP_QUESTION_IDS: Record<StepTab, string[]> = {
   profile: ["angkatan", "semester", "gender", "age"],
   workload: X_IDS,
-  sugar: [...SWEET_IDS, ...Y_IDS],
+  sugar: Y_IDS,
 };
 
 // Chip questions in on-screen order; after a first answer we glide to the next open one
 const CHIP_FLOW: Record<StepTab, string[]> = {
   profile: ["angkatan", "semester", "gender", "location"],
   workload: X_IDS,
-  sugar: [...SWEET_IDS, ...Y_IDS],
+  sugar: Y_IDS,
 };
 
 const ANGKATAN = ["2021", "2022", "2023", "2024", "2025", "2026"];
@@ -110,12 +107,6 @@ const TASK_AGREEMENT: ChoiceOption<number>[] = LIKERT_AGREEMENT_5_OPTIONS.map((o
   label: o.fullLabel,
 }));
 
-const FREQUENCY: ChoiceOption<number>[] = LIKERT_FREQUENCY_OPTIONS.map((o) => ({
-  value: o.value,
-  label: o.fullLabel,
-  hint: o.description,
-}));
-
 const isAnswered = (s: QuestionnaireState, qid: string): boolean => {
   switch (qid) {
     case "angkatan":
@@ -131,7 +122,6 @@ const isAnswered = (s: QuestionnaireState, qid: string): boolean => {
     default:
       return (
         s.variableXAnswers[qid] != null ||
-        s.sweetCategoryFrequency[qid] != null ||
         s.variableYAnswers[qid] != null
       );
   }
@@ -148,10 +138,17 @@ const scrollBehavior = (): ScrollBehavior => (prefersReducedMotion() ? "auto" : 
 
 const mergeSavedState = (saved: Partial<QuestionnaireState> | null): QuestionnaireState => {
   if (!saved) return INITIAL_QUESTIONNAIRE_STATE;
+  const {
+    sweetCategoryFrequency: _removedCategoryAnswers,
+    ...currentSaved
+  } = saved as Partial<QuestionnaireState> & {
+    sweetCategoryFrequency?: Record<string, number>;
+  };
+  void _removedCategoryAnswers;
 
   return {
     ...INITIAL_QUESTIONNAIRE_STATE,
-    ...saved,
+    ...currentSaved,
     demographics: {
       ...INITIAL_QUESTIONNAIRE_STATE.demographics,
       ...(saved.demographics ?? {}),
@@ -162,10 +159,6 @@ const mergeSavedState = (saved: Partial<QuestionnaireState> | null): Questionnai
     },
     variableXAnswers: {
       ...INITIAL_QUESTIONNAIRE_STATE.variableXAnswers,
-    },
-    sweetCategoryFrequency: {
-      ...INITIAL_QUESTIONNAIRE_STATE.sweetCategoryFrequency,
-      ...(saved.sweetCategoryFrequency ?? {}),
     },
     variableYAnswers: {
       ...INITIAL_QUESTIONNAIRE_STATE.variableYAnswers,
@@ -400,7 +393,6 @@ export function App() {
     const totalPoints =
       4 + // angkatan, semester, age, gender
       VARIABLE_X_ITEMS.length +
-      SWEET_CATEGORIES.length +
       VARIABLE_Y_ITEMS.length;
 
     if (activeTab === "done") {
@@ -418,8 +410,7 @@ export function App() {
     if (state.demographics.gender) filled += 1;
 
     filled += VARIABLE_X_ITEMS.filter((item) => state.variableXAnswers[item.id] != null).length;
-    filled += Object.keys(state.sweetCategoryFrequency).length;
-    filled += Object.keys(state.variableYAnswers).length;
+    filled += VARIABLE_Y_ITEMS.filter((item) => state.variableYAnswers[item.id] != null).length;
 
     return {
       riseProgress: Math.min(1, filled / totalPoints),
@@ -519,13 +510,6 @@ export function App() {
     answer(qid, (prev) => ({
       ...prev,
       variableXAnswers: { ...prev.variableXAnswers, [qid]: v },
-    }));
-  }, [answer]);
-
-  const handlePickSweet = useCallback((qid: string, v: number) => {
-    answer(qid, (prev) => ({
-      ...prev,
-      sweetCategoryFrequency: { ...prev.sweetCategoryFrequency, [qid]: v },
     }));
   }, [answer]);
 
@@ -647,10 +631,6 @@ export function App() {
     VARIABLE_X_ITEMS.forEach((item, i) => {
       vx[item.id] = [4, 3, 2, 4, 3, 2, 4, 3][i % 8];
     });
-    const freq: Record<string, number> = {};
-    SWEET_CATEGORIES.forEach((cat, i) => {
-      freq[cat.id] = [4, 3, 2, 3, 3][i % 5];
-    });
     const vy: Record<string, number> = {};
     VARIABLE_Y_ITEMS.forEach((item, i) => {
       vy[item.id] = [4, 4, 2, 4, 3, 4, 2, 3][i % 8];
@@ -676,7 +656,6 @@ export function App() {
         daily_study_hours: 5,
       },
       variableXAnswers: vx,
-      sweetCategoryFrequency: freq,
       variableYAnswers: vy,
       openNote: "Es kopi susu gula aren waktu lembur praktikum.",
     });
@@ -1212,28 +1191,6 @@ export function App() {
                           Dalam seminggu terakhir, bagaimana perilaku konsumsi makanan dan/atau minuman tinggi gula kamu?
                         </p>
                         <div className="q-list">
-                          {SWEET_CATEGORIES.map((cat, idx) => (
-                            <ChoiceRow
-                              key={cat.id}
-                              qid={cat.id}
-                              label={`Jenis ${idx + 1} dari ${SWEET_CATEGORIES.length}`}
-                              text={cat.name}
-                              hint={`${cat.examples}. Sekitar ${cat.sugarEstimate}.`}
-                              options={FREQUENCY}
-                              value={state.sweetCategoryFrequency[cat.id]}
-                              isMissing={missing.has(cat.id)}
-                              variant="chips-likert-frequency"
-                              onPick={handlePickSweet}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="q-group">
-                        <p className="q-group-title">
-                          Seberapa sesuai pernyataan berikut dengan dirimu?
-                        </p>
-                        <div className="q-list">
                           {VARIABLE_Y_ITEMS.map((item, idx) => (
                             <ChoiceRow
                               key={item.id}
@@ -1339,10 +1296,6 @@ export function App() {
                         <div className="receipt-row">
                           <span>TEMPAT NUGAS FAVORIT</span>
                           <strong>{state.demographics.studyLocation || "Kampus / Kos"}</strong>
-                        </div>
-                        <div className="receipt-row">
-                          <span>ASUPAN MANIS UTAMA</span>
-                          <strong>{receipt.summary.topSweetCraving}</strong>
                         </div>
                         <div className="receipt-row">
                           <span>DURASI NUGAS HARIAN</span>
