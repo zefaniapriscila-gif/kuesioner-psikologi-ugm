@@ -682,7 +682,6 @@ export function App() {
       quantitativeTasks: {
         weekly_assignments_count: 7,
         daily_study_hours: 5,
-        late_night_sessions: 4,
       },
       variableXAnswers: vx,
       sweetCategoryFrequency: freq,

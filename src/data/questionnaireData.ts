@@ -149,7 +149,7 @@ export const LIKERT_FREQUENCY_OPTIONS: LikertOption[] = [
 export const QUANTITATIVE_TASK_METRICS: QuantitativeTaskMetric[] = [
   {
     id: "weekly_assignments_count",
-    label: "Rata-rata jumlah tagihan tugas akademik per minggu",
+    label: "Berapa jumlah tugas akademik yang umumnya diberikan kepada Anda?",
     unit: "Tugas / Minggu",
     helperText:
       "Gabungan tugas individu, laporan praktikum, jurnal reading, maupun proyek kelompok yang memiliki tenggat waktu mingguan.",
@@ -165,7 +165,8 @@ export const QUANTITATIVE_TASK_METRICS: QuantitativeTaskMetric[] = [
   },
   {
     id: "daily_study_hours",
-    label: "Durasi rata-rata pengerjaan tugas di luar jam kuliah",
+    label:
+      "Berapa lama durasi yang umumnya Anda butuhkan untuk mengerjakan tugas akademik di luar jam kuliah",
     unit: "Jam / Hari",
     helperText:
       "Waktu efektif yang Anda habiskan di meja belajar, perpustakaan, atau kafe untuk menyelesaikan tugas kuliah setiap harinya.",
@@ -177,22 +178,6 @@ export const QUANTITATIVE_TASK_METRICS: QuantitativeTaskMetric[] = [
       low: "1 - 2 jam/hari",
       moderate: "3 - 5 jam/hari",
       high: "6+ jam/hari",
-    },
-  },
-  {
-    id: "late_night_sessions",
-    label: "Frekuensi mengerjakan tugas melewati pukul 23.00 malam",
-    unit: "Malam / Minggu",
-    helperText:
-      "Berapa malam dalam satu minggu terakhir Anda masih aktif di depan layar untuk mengejar tenggat akademik.",
-    min: 0,
-    max: 7,
-    step: 1,
-    defaultValue: 3,
-    benchmarks: {
-      low: "0 - 1 malam",
-      moderate: "2 - 4 malam",
-      high: "5 - 7 malam",
     },
   },
 ];

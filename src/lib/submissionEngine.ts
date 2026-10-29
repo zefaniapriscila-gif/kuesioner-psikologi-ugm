@@ -47,7 +47,6 @@ export const INITIAL_QUESTIONNAIRE_STATE: QuestionnaireState = {
   quantitativeTasks: {
     weekly_assignments_count: 5,
     daily_study_hours: 4,
-    late_night_sessions: 3,
   },
   variableXAnswers: {},
   sweetCategoryFrequency: {},
@@ -178,8 +177,6 @@ export async function submitToGoogleSheets(
       state.quantitativeTasks[QUANTITATIVE_TASK_METRICS[0].id] ?? 5,
     dailyStudyHours:
       state.quantitativeTasks[QUANTITATIVE_TASK_METRICS[1].id] ?? 4,
-    lateNightSessions:
-      state.quantitativeTasks[QUANTITATIVE_TASK_METRICS[2].id] ?? 3,
     variableXTotalScore: summary.variableXTotalScore,
     variableXCategory: summary.variableXCategory,
     ...summary.recodedVariableX,
