@@ -141,6 +141,45 @@ const setDemo =
 
 const scrollBehavior = (): ScrollBehavior => (prefersReducedMotion() ? "auto" : "smooth");
 
+const mergeSavedState = (saved: Partial<QuestionnaireState> | null): QuestionnaireState => {
+  if (!saved) return INITIAL_QUESTIONNAIRE_STATE;
+
+  return {
+    ...INITIAL_QUESTIONNAIRE_STATE,
+    ...saved,
+    demographics: {
+      ...INITIAL_QUESTIONNAIRE_STATE.demographics,
+      ...(saved.demographics ?? {}),
+    },
+    quantitativeTasks: {
+      ...INITIAL_QUESTIONNAIRE_STATE.quantitativeTasks,
+      ...(saved.quantitativeTasks ?? {}),
+    },
+    variableXAnswers: {
+      ...INITIAL_QUESTIONNAIRE_STATE.variableXAnswers,
+      ...(saved.variableXAnswers ?? {}),
+    },
+    sweetCategoryFrequency: {
+      ...INITIAL_QUESTIONNAIRE_STATE.sweetCategoryFrequency,
+      ...(saved.sweetCategoryFrequency ?? {}),
+    },
+    variableYAnswers: {
+      ...INITIAL_QUESTIONNAIRE_STATE.variableYAnswers,
+      ...(saved.variableYAnswers ?? {}),
+    },
+  };
+};
+
+const getStoredTheme = (): boolean => {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "night" || saved === "day") return saved === "night";
+  } catch {
+    // ignore
+  }
+  return document.documentElement.dataset.theme === "night";
+};
+
 // Researcher tools (sample fill, data panel) stay out of respondents' way.
 // Open the site with ?peneliti to show them.
 const detectResearcher = () => {
@@ -230,7 +269,8 @@ export function App() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return { ...INITIAL_QUESTIONNAIRE_STATE, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved) as Partial<QuestionnaireState>;
+        return mergeSavedState(parsed);
       }
     } catch {
       // ignore
@@ -247,9 +287,7 @@ export function App() {
     }
     return "profile";
   });
-  const [isNightMode, setIsNightMode] = useState<boolean>(
-    () => document.documentElement.dataset.theme === "night"
-  );
+  const [isNightMode, setIsNightMode] = useState<boolean>(() => getStoredTheme());
   const [isSoundOn, setIsSoundOn] = useState<boolean>(() => !soundEngine.isMuted);
   const [isTucked, setIsTucked] = useState<boolean>(false);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
