@@ -72,6 +72,10 @@
   --slip-ink: #2b3bb0;
   --slip-due: #c4352b;
   --slip-shadow: rgba(20, 26, 58, 0.16);
+  --gate-rule: rgba(43, 59, 176, 0.085);
+  --gate-margin: rgba(214, 64, 64, 0.4);
+  --card-paper: #fcfaf5;
+  --stabilo: rgba(255, 176, 66, 0.46);
   --thumb: linear-gradient(180deg, #8e9ae6, #2b3bb0);
   --thumb-hover: linear-gradient(180deg, #7584e0, #22309a);
 }
@@ -108,6 +112,10 @@
   --cube-right: #838da8;
   --slip-paper: #e6e9f3;
   --slip-shadow: rgba(0, 0, 8, 0.5);
+  --gate-rule: rgba(163, 173, 255, 0.07);
+  --gate-margin: rgba(255, 128, 128, 0.26);
+  --card-paper: #141b40;
+  --stabilo: rgba(242, 163, 91, 0.3);
   --thumb: linear-gradient(180deg, #c3c9ff, #8390f0);
   --thumb-hover: linear-gradient(180deg, #d4d8ff, #98a3f5);
 }
@@ -398,6 +406,7 @@ ul, ol {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  contain: strict;
 }
 
 .beranda-slips {
@@ -441,7 +450,8 @@ ul, ol {
   margin-bottom: 30px;
 }
 
-.beranda-title {
+.beranda-title,
+.story-title {
   font-size: clamp(56px, 6.3vw, 104px);
   font-weight: 800;
   font-stretch: 78%;
@@ -453,16 +463,18 @@ ul, ol {
   display: block;
 }
 
-.beranda-line {
+.beranda-line,
+.story-line {
   display: block;
   overflow: hidden;
   padding-bottom: 0.08em;
   margin-bottom: -0.08em;
 }
 
+/* Waits for the story's last line to clear the same spot */
 .beranda-line > span {
   display: inline-block;
-  transition: transform 0.95s var(--ease-out) calc(0.15s + var(--i, 0) * 0.07s);
+  transition: transform 0.95s var(--ease-out) calc(0.36s + var(--i, 0) * 0.07s);
 }
 
 .beranda-lede {
@@ -472,7 +484,7 @@ ul, ol {
   line-height: 1.5;
   color: var(--ink-2);
   text-wrap: pretty;
-  transition: opacity 0.7s ease 0.5s, transform 0.8s var(--ease-out) 0.5s;
+  transition: opacity 0.7s ease 0.7s, transform 0.8s var(--ease-out) 0.7s;
 }
 
 .glass-slot {
@@ -494,11 +506,144 @@ ul, ol {
   grid-area: actions;
   align-self: end;
   justify-self: end;
-  display: grid;
-  gap: 16px;
-  width: min(100%, 360px);
+  width: min(100%, 384px);
   margin-bottom: 30px;
-  transition: opacity 0.7s ease 0.6s, transform 0.8s var(--ease-out) 0.6s;
+}
+
+/* Three index cards in the order you would use them: read, take part, see
+   the results. The number sits in the margin, left of the red rule, the way
+   you would number a page in a ruled notebook. */
+.beranda-cards {
+  display: grid;
+  gap: 10px;
+}
+
+.beranda-cards > li {
+  transition: opacity 0.6s ease calc(0.8s + var(--i, 0) * 0.09s),
+    transform 0.8s var(--ease-out) calc(0.8s + var(--i, 0) * 0.09s);
+}
+
+.kartu {
+  --margin-x: 50px;
+  --rule-c: var(--gate-margin);
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--margin-x) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "num label arrow"
+    "num sub   arrow";
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 2px;
+  padding: 14px 18px 15px 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent var(--margin-x),
+      var(--rule-c) var(--margin-x) calc(var(--margin-x) + 1.5px),
+      transparent 0
+    ),
+    var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 1px 2px var(--contact),
+    0 16px 30px -20px var(--cast-page);
+  transition: background-color 0.2s ease, box-shadow 0.3s ease, transform 0.3s var(--ease-out);
+}
+
+.kartu:focus-visible {
+  border-radius: 8px;
+}
+
+.kartu-num {
+  grid-area: num;
+  align-self: start;
+  justify-self: center;
+  margin-top: 1px;
+  font-size: 22px;
+  font-weight: 760;
+  font-stretch: 78%;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--pen);
+}
+
+.kartu-label {
+  grid-area: label;
+  font-size: 17.5px;
+  font-weight: 680;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.kartu-sub {
+  grid-area: sub;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+.kartu-arrow {
+  grid-area: arrow;
+  color: var(--ink-3);
+  transition: transform 0.3s var(--ease-out), color 0.2s ease;
+}
+
+/* The one to press: inked in ballpoint blue, like the old button */
+.kartu.is-primary {
+  --rule-c: color-mix(in srgb, var(--btn-ink) 30%, transparent);
+  padding-block: 18px 19px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent var(--margin-x),
+      var(--rule-c) var(--margin-x) calc(var(--margin-x) + 1.5px),
+      transparent 0
+    ),
+    var(--btn);
+  color: var(--btn-ink);
+  box-shadow: var(--cta-glow);
+}
+
+.kartu.is-primary .kartu-num,
+.kartu.is-primary .kartu-arrow {
+  color: color-mix(in srgb, var(--btn-ink) 78%, transparent);
+}
+
+.kartu.is-primary .kartu-label {
+  font-size: 20px;
+}
+
+.kartu.is-primary .kartu-sub {
+  color: color-mix(in srgb, var(--btn-ink) 80%, transparent);
+}
+
+.kartu:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) {
+  .kartu:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px var(--line-strong),
+      0 1px 2px var(--contact),
+      0 22px 34px -20px var(--cast-page);
+  }
+
+  .kartu.is-primary:hover {
+    background-color: var(--pen-hover);
+    box-shadow: var(--cta-glow-hover);
+  }
+
+  .kartu:hover .kartu-arrow {
+    transform: translateX(3px);
+    color: currentColor;
+  }
 }
 
 .cta {
@@ -553,31 +698,21 @@ ul, ol {
   color: color-mix(in srgb, var(--btn-ink) 80%, transparent);
 }
 
-.beranda-hasil {
-  font-size: 14.5px;
-  line-height: 1.5;
-  color: var(--ink-3);
-}
-
-.beranda-hasil .text-link {
-  font-size: inherit;
-}
-
 .beranda-note {
   grid-area: note;
   padding: 20px 0 24px;
   font-size: 13.5px;
   color: var(--ink-3);
-  transition: opacity 0.7s ease 0.7s;
+  transition: opacity 0.7s ease 0.9s;
 }
 
 /* During the intro only the glass and the falling tasks show */
 .beranda.is-intro .beranda-line > span {
-  transform: translateY(105%);
+  transform: translateY(135%);
 }
 
 .beranda.is-intro .beranda-lede,
-.beranda.is-intro .beranda-actions {
+.beranda.is-intro .beranda-cards > li {
   opacity: 0;
   transform: translateY(14px);
 }
@@ -586,11 +721,41 @@ ul, ol {
   opacity: 0;
 }
 
-.intro-skip {
+/* How far the story has got, and the way out of it */
+.intro-bar {
   position: absolute;
   right: var(--gutter);
   bottom: max(18px, env(safe-area-inset-bottom));
   z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: fade-in 0.6s ease 0.8s both;
+}
+
+.intro-progress {
+  width: 64px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line-strong);
+  overflow: hidden;
+}
+
+.intro-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--pen);
+  transform-origin: 0 50%;
+  animation: intro-progress linear both;
+}
+
+@keyframes intro-progress {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.intro-skip {
   padding: 10px 14px;
   border: 0;
   border-radius: 8px;
@@ -599,7 +764,6 @@ ul, ol {
   font-size: 14px;
   font-weight: 560;
   cursor: pointer;
-  animation: fade-in 0.6s ease 1s both;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -608,14 +772,428 @@ ul, ol {
   color: var(--ink);
 }
 
+/* --------------------------------------------------------------------------
+   The story before the beranda settles: on wide screens it is told in the
+   copy column, where the headline lands after it, and the cravings stand
+   where the actions will. Each beat's lines rise out of their masks and
+   leave upwards when the next one comes in.
+   -------------------------------------------------------------------------- */
+.story {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr);
+  column-gap: var(--col-gap);
+  max-width: 1560px;
+  height: var(--desk-y, 100svh);
+  margin: 0 auto;
+  padding: calc(var(--masthead-h) + 24px) var(--gutter) 0;
+  pointer-events: none;
+}
+
+.story-text {
+  grid-column: 1;
+  align-self: end;
+  display: grid;
+  margin-bottom: 30px;
+}
+
+.story-beat {
+  grid-area: 1 / 1;
+  align-self: end;
+}
+
+/* Past the line box by a third, so ascenders and descenders that overhang
+   the tight line height never peek over the mask's edge */
+.story-line > span {
+  display: inline-block;
+  transform: translateY(135%);
+  transition: transform 0.42s cubic-bezier(0.55, 0, 0.9, 0.4) calc(var(--i, 0) * 0.035s);
+}
+
+.story-beat[data-state="on"] .story-line > span {
+  transform: none;
+  transition: transform 0.9s var(--ease-out) calc(0.3s + var(--i, 0) * 0.07s);
+}
+
+.story-beat[data-state="past"] .story-line > span {
+  transform: translateY(-135%);
+}
+
+.story-kicker {
+  margin-bottom: 14px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.story-kicker > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.story-kicker b {
+  font-weight: 760;
+  color: var(--ink);
+}
+
+.story-clock {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--slip-due);
+  animation: story-blink 1s steps(1) infinite;
+}
+
+.story-clock.is-late {
+  animation-duration: 0.42s;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--slip-due) 24%, transparent);
+}
+
+.story-kicker:has(.is-late) b {
+  color: var(--slip-due);
+}
+
+@keyframes story-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.story-mark {
+  width: 16px;
+  height: 18px;
+  color: var(--ink);
+}
+
+.story-lead {
+  margin-bottom: 8px;
+  font-family: var(--serif);
+  font-size: clamp(24px, 2.1vw, 32px);
+  font-style: italic;
+  line-height: 1.15;
+  color: var(--ink-2);
+}
+
+.story-title {
+  display: block;
+}
+
+.story-line.is-tea {
+  color: var(--accent-text);
+}
+
+.story-invite {
+  display: block;
+  font-family: var(--serif);
+  font-size: clamp(38px, 3.5vw, 58px);
+  font-weight: 450;
+  line-height: 1.04;
+  letter-spacing: -0.018em;
+}
+
+.story-invite .story-line {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.story-invite .is-tea {
+  font-style: italic;
+}
+
+.story-cravings {
+  grid-column: 3;
+  align-self: end;
+  justify-self: end;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  margin-bottom: 34px;
+}
+
+.story-cravings li {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 12px 24px -16px var(--slip-shadow);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(18px) rotate(var(--r, 0deg)) scale(0.92);
+  transition: opacity 0.3s ease calc(var(--i, 0) * 0.04s), transform 0.4s ease-in calc(var(--i, 0) * 0.04s);
+}
+
+.story-cravings[data-state="on"] li {
+  opacity: 1;
+  transform: rotate(var(--r, 0deg));
+  transition: opacity 0.35s ease calc(0.5s + var(--i, 0) * 0.13s),
+    transform 0.7s var(--ease-spring) calc(0.5s + var(--i, 0) * 0.13s);
+}
+
+.story-cravings[data-state="past"] li {
+  transform: translateY(-14px) rotate(var(--r, 0deg)) scale(0.96);
+}
+
+/* --------------------------------------------------------------------------
+   The gate: a ruled page with the study's title and one button. The window
+   (or, at night, the desk lamp) already lights it; pressing Mulai closes the
+   page in on the button and the story starts behind it.
+   -------------------------------------------------------------------------- */
+.gate {
+  --rule: 34px;
+  --margin-x: calc(var(--gutter) + 8px);
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  align-items: center;
+  padding: calc(env(safe-area-inset-top) + 40px) var(--gutter) calc(env(safe-area-inset-bottom) + 40px)
+    calc(var(--margin-x) + clamp(22px, 3.4vw, 56px));
+  overflow: hidden;
+  background:
+    linear-gradient(
+      90deg,
+      transparent var(--margin-x),
+      var(--gate-margin) var(--margin-x) calc(var(--margin-x) + 1.5px),
+      transparent 0
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(var(--rule) - 1px),
+      var(--gate-rule) calc(var(--rule) - 1px) var(--rule)
+    ),
+    var(--bg);
+  clip-path: circle(150% at var(--ix, 30%) var(--iy, 70%));
+  transition: clip-path 0.72s cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+.gate.is-leaving {
+  clip-path: circle(0% at var(--ix, 30%) var(--iy, 70%));
+  pointer-events: none;
+}
+
+.gate-light {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Day: sun through a four-pane window, leaning as it comes in from above */
+.gate-sun {
+  right: -8vw;
+  top: 3vh;
+  display: grid;
+  grid-template: 1fr 1.18fr / 1fr 1fr;
+  gap: 3.4% 4.2%;
+  width: min(54vw, 780px);
+  height: 88vh;
+  transform: skewX(15deg);
+  filter: blur(3px);
+  animation: gate-sun 1.8s ease-out both;
+}
+
+.gate-sun > i {
+  border-radius: 2px;
+  background: rgba(255, 240, 204, 0.72);
+  box-shadow: 0 0 34px 10px rgba(255, 240, 204, 0.32);
+}
+
+@keyframes gate-sun {
+  from {
+    opacity: 0;
+    translate: -3vw 0;
+  }
+}
+
+/* Night: the desk lamp's beam and the pool it throws on the page */
+.gate-lamp {
+  inset: 0;
+  display: none;
+  background:
+    radial-gradient(ellipse 46% 42% at 34% 52%, rgba(255, 170, 88, 0.3), transparent 72%),
+    radial-gradient(ellipse 90% 70% at 30% 60%, rgba(150, 82, 40, 0.22), transparent 80%),
+    conic-gradient(
+      from 122deg at -4% -14%,
+      transparent 0deg,
+      rgba(255, 186, 118, 0.14) 7deg,
+      rgba(255, 186, 118, 0.09) 30deg,
+      transparent 38deg
+    );
+  mix-blend-mode: screen;
+  animation: gate-lamp 1.4s ease-out both;
+}
+
+@keyframes gate-lamp {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.7;
+  }
+  26% {
+    opacity: 0.2;
+  }
+}
+
+[data-theme="night"] .gate-sun {
+  display: none;
+}
+
+[data-theme="night"] .gate-lamp {
+  display: block;
+}
+
+.gate-inner {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: clamp(16px, 2.6vh, 26px);
+  max-width: 800px;
+  transition: opacity 0.35s ease, transform 0.6s var(--ease-out), filter 0.45s ease;
+}
+
+.gate.is-leaving .gate-inner {
+  opacity: 0;
+  transform: scale(0.96);
+  filter: blur(4px);
+}
+
+.gate-inner > * {
+  animation: gate-rise 0.9s var(--ease-out) both;
+}
+
+.gate-inner > :nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.gate-inner > :nth-child(3) {
+  animation-delay: 0.22s;
+}
+
+.gate-inner > :nth-child(4) {
+  animation-delay: 0.36s;
+}
+
+.gate-inner > :nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+@keyframes gate-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.gate-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.gate-mark {
+  width: 18px;
+  height: 20px;
+  color: var(--ink);
+}
+
+.gate-title {
+  max-width: 20ch;
+  font-family: var(--serif);
+  font-size: clamp(32px, 4.3vw, 66px);
+  font-weight: 460;
+  line-height: 1.03;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+  color: var(--ink);
+}
+
+.gate-title em {
+  font-style: italic;
+}
+
+.gate-title .is-pen {
+  color: var(--pen);
+}
+
+.gate-title .is-tea {
+  color: var(--accent-text);
+}
+
+.gate-sub {
+  max-width: 40ch;
+  font-family: var(--serif);
+  font-size: clamp(18px, 1.5vw, 21px);
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.gate-start {
+  position: relative;
+  width: min(100%, 340px);
+  margin-top: 6px;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Rings that keep going out from the button until it is pressed */
+.gate-ring {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--pen);
+  border-radius: 10px;
+  opacity: 0;
+  pointer-events: none;
+  animation: gate-ring 2.6s cubic-bezier(0.2, 0.6, 0.3, 1) 1.1s infinite;
+}
+
+.gate-ring.is-late {
+  animation-delay: 2.4s;
+}
+
+@keyframes gate-ring {
+  0% {
+    inset: 0;
+    opacity: 0.75;
+  }
+  100% {
+    inset: -18px;
+    border-radius: 22px;
+    opacity: 0;
+  }
+}
+
+.gate-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
 /* Task slips: strips torn from a ruled notebook, written in ballpoint */
 .slip {
   position: absolute;
   left: 0;
   top: 0;
   opacity: 0;
-  filter: drop-shadow(0 10px 12px var(--slip-shadow)) drop-shadow(0 1px 1px var(--slip-shadow));
+  filter: drop-shadow(0 8px 12px var(--slip-shadow));
   will-change: transform, opacity;
+  contain: layout style;
 }
 
 .slip-paper {
@@ -682,14 +1260,53 @@ ul, ol {
     margin-bottom: 0;
   }
 
-  .beranda-title {
+  .beranda-title,
+  .story-title {
     font-size: clamp(38px, 10.4vw, 72px);
     line-height: 0.9;
   }
 
-  .beranda-line {
+  .beranda-line,
+  .story-title .story-line {
     display: inline-block;
     vertical-align: top;
+  }
+
+  /* The story is told above the glass, where the headline lands after it */
+  .story {
+    display: block;
+    height: auto;
+    padding: calc(env(safe-area-inset-top) + 22px) var(--gutter) 0;
+  }
+
+  .story-text {
+    margin: 0;
+  }
+
+  .story-beat {
+    align-self: start;
+  }
+
+  .story-kicker {
+    margin-bottom: 10px;
+    font-size: 13.5px;
+  }
+
+  .story-lead {
+    margin-bottom: 4px;
+    font-size: clamp(20px, 5.2vw, 30px);
+  }
+
+  .story-invite {
+    font-size: clamp(30px, 7.8vw, 52px);
+  }
+
+  .story-cravings {
+    display: none;
+  }
+
+  .gate {
+    --rule: 30px;
   }
 
   .beranda-lede {
@@ -707,6 +1324,36 @@ ul, ol {
     justify-self: stretch;
     width: auto;
     margin: 4px 0 0;
+  }
+
+  .beranda-cards {
+    gap: 8px;
+  }
+
+  .kartu {
+    --margin-x: 44px;
+    column-gap: 12px;
+    padding: 12px 16px 13px 0;
+  }
+
+  .kartu-num {
+    font-size: 20px;
+  }
+
+  .kartu-label {
+    font-size: 16.5px;
+  }
+
+  .kartu.is-primary {
+    padding-block: 15px 16px;
+  }
+
+  .kartu.is-primary .kartu-label {
+    font-size: 18px;
+  }
+
+  .kartu-sub {
+    font-size: 13px;
   }
 
   .cta {
@@ -733,9 +1380,22 @@ ul, ol {
   }
   .beranda-line > span,
   .beranda-lede,
-  .beranda-actions,
+  .beranda-cards > li,
   .beranda-note {
     transition: none;
+  }
+  .gate-ring,
+  .gate-sun,
+  .gate-lamp,
+  .gate-inner > * {
+    animation: none;
+  }
+  .stabilo,
+  .setuju-box path {
+    transition: none;
+  }
+  .gate {
+    transition-duration: 0.01s;
   }
 }
 
@@ -867,6 +1527,591 @@ ul, ol {
 }
 
 /* ==========================================================================
+   Paper pages (penjelasan, persetujuan): a page from the gate's notebook,
+   lit by the same window or desk lamp. The light stays put while the page
+   scrolls under it, and every line of body text sits on a rule.
+   ========================================================================== */
+
+.paper {
+  --rule: 32px;
+  --rule-y: -6px;
+  --margin-x: calc(var(--gutter) + 8px);
+  --gap: clamp(34px, 4.4vw, 64px);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 700px);
+  grid-template-areas:
+    "head"
+    "read";
+  align-items: start;
+  min-height: 100svh;
+  padding: calc(var(--masthead-h) + clamp(36px, 6vw, 84px)) var(--gutter) 0
+    calc(var(--margin-x) + var(--gap));
+  background:
+    linear-gradient(
+      90deg,
+      transparent var(--margin-x),
+      var(--gate-margin) var(--margin-x) calc(var(--margin-x) + 1.5px),
+      transparent 0
+    ),
+    var(--bg);
+  /* Keeps the fixed light on this page, off the footer */
+  clip-path: inset(0);
+}
+
+.paper-light {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.paper-head {
+  grid-area: head;
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  padding-bottom: clamp(36px, 5vw, 60px);
+}
+
+.paper-title {
+  max-width: 21ch;
+  font-family: var(--serif);
+  font-size: clamp(34px, 4vw, 60px);
+  font-weight: 460;
+  line-height: 1.04;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+
+.paper-title em {
+  font-style: italic;
+}
+
+.paper-title .is-pen {
+  color: var(--pen);
+}
+
+.paper-title .is-tea {
+  color: var(--accent-text);
+}
+
+.paper-meta {
+  font-size: 14.5px;
+  font-weight: 560;
+  color: var(--ink-3);
+}
+
+.paper-sub {
+  max-width: 40ch;
+  font-family: var(--serif);
+  font-size: clamp(18px, 1.5vw, 21px);
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* The written part: line height, gaps and rows all come in whole rules */
+.paper-ruled {
+  grid-area: read;
+  position: relative;
+  padding: var(--rule) 0 calc(var(--rule) * 3);
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: var(--rule);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* The rules run across the whole page, from the header line down, printed
+   over the light so they still show where the sun falls. --rule-y sets each
+   rule just under the baseline of the line it carries. */
+.paper-ruled::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: -100vw;
+  bottom: -100vh;
+  left: -100vw;
+  border-top: 1.5px solid color-mix(in srgb, var(--pen) 30%, transparent);
+  background: repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(var(--rule) - 1px),
+      var(--gate-rule) calc(var(--rule) - 1px) var(--rule)
+    )
+    0 var(--rule-y);
+  pointer-events: none;
+}
+
+.bab + .bab {
+  margin-top: calc(var(--rule) * 2);
+}
+
+.bab > * + * {
+  margin-top: var(--rule);
+}
+
+.bab > .bab-title + * {
+  margin-top: 0;
+}
+
+.bab-title {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: var(--rule);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--pen);
+}
+
+/* The number hangs in the margin, just right of the red line */
+.bab-num {
+  flex: none;
+  width: calc(var(--gap) - 10px);
+  margin-left: calc(10px - var(--gap));
+  font-size: 21px;
+  font-weight: 760;
+  font-stretch: 78%;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.bab-lead {
+  font-size: 24px;
+  color: var(--ink);
+}
+
+.bab .text-link {
+  padding: 0;
+  font-size: inherit;
+}
+
+/* A highlighter stroke, pulled across once the line comes into view */
+.stabilo {
+  margin: 0 -0.12em;
+  padding: 0 0.12em;
+  border-radius: 0.18em 0.32em 0.22em 0.36em;
+  background: linear-gradient(var(--stabilo), var(--stabilo)) 0 78% / 0% 64% no-repeat;
+  color: inherit;
+  transition: background-size 1.1s cubic-bezier(0.6, 0, 0.25, 1) 0.15s;
+}
+
+.stabilo.is-on {
+  background-size: 100% 64%;
+}
+
+.bab-rows > div {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 16px;
+}
+
+.bab-rows dt {
+  grid-column: 1;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.bab-rows dd {
+  grid-column: 2;
+  color: var(--ink);
+}
+
+/* Names down the lines, each with the name they go by */
+.roster li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--ink);
+}
+
+.roster-name {
+  min-width: 0;
+}
+
+.roster-dots {
+  flex: 1 1 24px;
+  min-width: 24px;
+  border-bottom: 2px dotted var(--line-strong);
+  transform: translateY(-4px);
+}
+
+.roster-call {
+  flex: none;
+  font-style: italic;
+  color: var(--accent-text);
+}
+
+.roster-call small {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+/* Two rules high, so the lines below stay in step */
+.kontak {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: fit-content;
+  max-width: 100%;
+  height: calc(var(--rule) * 2);
+  padding: 0 18px 0 16px;
+  border-radius: 10px;
+  background: var(--card-paper);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 1px 2px var(--contact),
+    -10px 16px 28px -20px var(--cast-page);
+  font-family: var(--sans);
+  line-height: 1.25;
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s ease;
+}
+
+.kontak-icon {
+  flex: none;
+  color: var(--pen);
+}
+
+.kontak-text {
+  display: grid;
+}
+
+.kontak-label {
+  font-size: 15.5px;
+  font-weight: 650;
+}
+
+.kontak-num {
+  font-size: 13.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.kontak-arrow {
+  flex: none;
+  margin-left: 6px;
+  color: var(--ink-3);
+  transition: transform 0.3s var(--ease-out), color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .kontak:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px var(--line-strong),
+      0 1px 2px var(--contact),
+      -10px 20px 30px -18px var(--cast-page);
+  }
+
+  .kontak:hover .kontak-arrow {
+    transform: translateX(3px);
+    color: var(--ink);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Penjelasan: an index card of the essentials stays beside the text
+   -------------------------------------------------------------------------- */
+.penjelasan {
+  grid-template-columns: minmax(0, 700px) minmax(280px, 340px);
+  grid-template-areas:
+    "head head"
+    "read aside";
+  column-gap: clamp(40px, 6vw, 112px);
+}
+
+.penjelasan-aside {
+  grid-area: aside;
+  position: sticky;
+  top: calc(var(--masthead-h) + 24px);
+  padding-top: var(--rule);
+}
+
+/* An index card: heading above the red line, faint blue rules below it.
+   The window is up and to the right, so it throws its shadow down-left. */
+.ringkas {
+  --card-rule: 28px;
+  padding: 16px 22px 22px;
+  border-radius: 6px;
+  background: var(--card-paper);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 1px 2px var(--contact),
+    -16px 24px 40px -24px var(--cast-page);
+  font-family: var(--sans);
+}
+
+.ringkas-head {
+  padding-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 22px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--pen);
+}
+
+.ringkas-list {
+  border-top: 1.5px solid var(--gate-margin);
+  background: repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(var(--card-rule) - 1px),
+      var(--slip-rule) calc(var(--card-rule) - 1px) var(--card-rule)
+    )
+    0 var(--card-rule-y, 4px);
+  font-size: 14.5px;
+  line-height: var(--card-rule);
+}
+
+.ringkas-list > div {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 12px;
+}
+
+.ringkas-list dt {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-3);
+}
+
+.ringkas-list dd {
+  color: var(--ink);
+}
+
+.ringkas-cta {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.ringkas-note {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.penjelasan-end {
+  display: grid;
+  justify-items: start;
+  gap: 20px;
+  margin-top: calc(var(--rule) * 2);
+  font-family: var(--sans);
+}
+
+/* On wide screens the card's button is always in view */
+.penjelasan-end-cta {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Persetujuan: the consent, then a box to tick before the questions open
+   -------------------------------------------------------------------------- */
+.persetujuan {
+  grid-template-columns: minmax(0, 680px);
+}
+
+.setuju-wrap {
+  margin-top: calc(var(--rule) * 2);
+  font-family: var(--sans);
+}
+
+.setuju {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: calc(var(--rule) * 2);
+  padding: 10px 20px 10px 18px;
+  border-radius: 10px;
+  background: var(--card-paper);
+  box-shadow:
+    0 0 0 1.5px var(--line-strong),
+    -10px 16px 28px -20px var(--cast-page);
+  font-size: 16px;
+  font-weight: 620;
+  line-height: 1.35;
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.25s ease;
+}
+
+.setuju.is-on {
+  box-shadow:
+    0 0 0 2px var(--pen),
+    -10px 16px 28px -20px var(--cast-page);
+}
+
+.setuju.is-missing {
+  box-shadow:
+    0 0 0 2px var(--error),
+    -10px 16px 28px -20px var(--cast-page);
+}
+
+/* The real checkbox sits over the drawn one, so it stays clickable and focusable */
+.setuju-input {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.setuju-box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid color-mix(in srgb, var(--ink) 55%, transparent);
+  border-radius: 4px;
+}
+
+.setuju-input:focus-visible + .setuju-box {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* A ballpoint tick that overshoots the box, drawn as it is ticked */
+.setuju-box svg {
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+}
+
+.setuju-box path {
+  fill: none;
+  stroke: var(--pen);
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.34s cubic-bezier(0.55, 0, 0.3, 1);
+}
+
+.setuju.is-on .setuju-box path {
+  stroke-dashoffset: 0;
+}
+
+.setuju-error {
+  margin-top: 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--error);
+}
+
+.setuju-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 26px;
+  margin-top: var(--rule);
+}
+
+.setuju-actions .cta {
+  min-width: min(100%, 320px);
+}
+
+.setuju-note {
+  max-width: 52ch;
+  margin-top: var(--rule);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+button.cta {
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.text-link {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+@media (max-width: 999px) {
+  .penjelasan {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "head"
+      "aside"
+      "read";
+  }
+
+  .penjelasan-aside {
+    position: static;
+    max-width: 520px;
+    padding: 0 0 calc(var(--rule) * 1.5);
+  }
+
+  .penjelasan-end-cta {
+    display: grid;
+    width: min(100%, 420px);
+  }
+}
+
+@media (max-width: 640px) {
+  .paper {
+    --rule: 30px;
+    --rule-y: -7px;
+  }
+
+  .paper-ruled {
+    font-size: 17.5px;
+  }
+
+  .bab-num {
+    font-size: 18px;
+  }
+
+  .bab-lead {
+    font-size: 21px;
+  }
+
+  .bab-rows > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bab-rows dt,
+  .bab-rows dd {
+    grid-column: 1;
+  }
+
+  /* Room for the names: the contact section already says who to reach */
+  .roster-call small {
+    display: none;
+  }
+
+  .setuju-actions .cta {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
    Buttons & Pills
    ========================================================================== */
 
@@ -917,7 +2162,7 @@ ul, ol {
 }
 
 /* ==========================================================================
-   Editorial Sections (About & Questionnaire)
+   Editorial Sections (Questionnaire)
    ========================================================================== */
 
 .section-wrap {
@@ -925,41 +2170,6 @@ ul, ol {
   margin: 0 auto;
   padding-left: var(--gutter);
   padding-right: var(--gutter);
-}
-
-.about-section {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: var(--col-gap);
-  row-gap: clamp(28px, 4vw, 48px);
-  padding-top: clamp(88px, 10vw, 148px);
-}
-
-.section-title {
-  grid-column: 1 / -1;
-  font-size: clamp(48px, 7.2vw, 110px);
-  font-weight: 760;
-  font-stretch: 118%;
-  line-height: 0.92;
-  letter-spacing: -0.045em;
-  text-shadow: calc(var(--lx) * 6px) calc(var(--ly) * 6px) calc(3px + var(--llen) * 3px) var(--cast-text);
-}
-
-.about-body {
-  grid-column: 1 / 8;
-  display: grid;
-  align-content: start;
-  gap: 20px;
-}
-
-.about-lead {
-  max-width: 28ch;
-  font-family: var(--serif);
-  font-size: clamp(28px, 3vw, 44px);
-  font-weight: 400;
-  line-height: 1.18;
-  letter-spacing: -0.012em;
-  text-wrap: balance;
 }
 
 .about-text {
@@ -971,108 +2181,6 @@ ul, ol {
   text-wrap: pretty;
 }
 
-.about-aside {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 6px;
-  font-size: 15px;
-  color: var(--ink-3);
-}
-
-.about-aside::before {
-  content: "";
-  flex: none;
-  width: 12px;
-  height: 14px;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  background: conic-gradient(from -60deg, var(--cube-top) 0 120deg, var(--cube-right) 0 240deg, var(--cube-left) 0);
-}
-
-.about-stack {
-  grid-column: 9 / 13;
-  display: grid;
-  align-content: start;
-  gap: 18px;
-  padding-top: 6px;
-}
-
-.about-stack dt {
-  font-size: 13px;
-  font-weight: 650;
-  color: var(--ink-3);
-}
-
-.about-stack dd {
-  margin: 3px 0 0;
-  font-size: 16.5px;
-  line-height: 1.45;
-}
-
-/* ==========================================================================
-   Marquee Band (Sugar Cubes & Boba Pearls Divider)
-   ========================================================================== */
-
-.marquee {
-  margin: clamp(72px, 9vw, 130px) calc(50% - 50vw) clamp(48px, 6vw, 88px);
-  overflow: hidden;
-  font-size: clamp(64px, 10.5vw, 170px);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
-}
-
-.marquee-track {
-  display: flex;
-  align-items: center;
-  width: max-content;
-  animation: marquee-scroll 34s linear infinite;
-}
-
-@keyframes marquee-scroll {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
-.marquee-group {
-  display: flex;
-  align-items: center;
-  flex: none;
-}
-
-.marquee-item {
-  padding: 0 0.22em;
-  font-weight: 860;
-  font-stretch: 66%;
-  line-height: 1.04;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.marquee-item.is-outline {
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--ink);
-}
-
-.marquee-cube {
-  flex: none;
-  width: 0.28em;
-  height: 0.323em;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  background: conic-gradient(from -60deg, var(--cube-top) 0 120deg, var(--cube-right) 0 240deg, var(--cube-left) 0);
-}
-
-.marquee-boba {
-  flex: none;
-  width: 0.28em;
-  height: 0.28em;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 32%, #6e3b1e, #261107 65%, #120703);
-}
-
 /* ==========================================================================
    The Questionnaire Scene (Brew Cup Companion fills up as you answer)
    ========================================================================== */
@@ -1080,6 +2188,7 @@ ul, ol {
 .survey-body {
   --disc: clamp(136px, 12.5vw, 184px);
   display: grid;
+  padding-top: calc(var(--masthead-h) + clamp(28px, 4.5vw, 64px));
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.38fr);
   align-items: start;
   gap: clamp(36px, 5vw, 88px);
@@ -1527,27 +2636,6 @@ ul, ol {
   color: color-mix(in srgb, var(--btn-ink) 72%, transparent);
 }
 
-.chip-consent {
-  gap: 10px;
-  padding-left: 11px;
-}
-
-.chip-check {
-  display: inline-grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  border: 1.5px solid color-mix(in srgb, var(--ink) 35%, transparent);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.chip.is-selected .chip-check {
-  border-color: var(--caramel);
-  background: var(--caramel);
-  color: #fff;
-}
-
 /* Ink-line Inputs */
 .note-fields {
   display: grid;
@@ -1912,10 +3000,6 @@ body {
 
 /* Tablet & Smaller Devices (max-width: 959px) */
 @media (max-width: 959px) {
-  .about-body,
-  .about-stack {
-    grid-column: 1 / -1;
-  }
   .survey-body {
     grid-template-columns: minmax(0, 1fr);
     gap: 28px;
@@ -2018,12 +3102,6 @@ body {
   .cup-tag-sub {
     font-size: 12px;
   }
-
-  /* About section stack */
-  .about-stack {
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
 }
 
 /* Smartphone & Narrow Viewports (max-width: 640px) */
@@ -2032,22 +3110,9 @@ body {
     --gutter: 14px;
   }
 
-  /* Editorial About Section */
-  .about-section {
-    padding-top: 40px;
-    row-gap: 20px;
-  }
-  .about-lead {
-    font-size: 22px;
-    line-height: 1.25;
-  }
   .about-text {
     font-size: 15px;
     line-height: 1.5;
-  }
-  .about-stack {
-    grid-template-columns: 1fr;
-    gap: 12px;
   }
 
   /* Questionnaire Scene & Card */

@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Beranda } from "./components/Beranda";
-import { BrewCupCompanion } from "./components/BrewCupCompanion";
+
 import { CubeMark } from "./components/CubeMark";
-import { HasilPenelitian } from "./components/HasilPenelitian";
-import { ResearcherAdminModal } from "./components/ResearcherAdminModal";
+import { Persetujuan } from "./components/Persetujuan";
 import { soundEngine } from "./lib/soundEngine";
-import { Check, Moon, SpeakerHigh, SpeakerSlash, Sun } from "@phosphor-icons/react";
+import { Check, Moon, SpeakerHigh, SpeakerSlash, Sun } from "./components/Icons";
 import {
   LIKERT_AGREEMENT_OPTIONS,
   LIKERT_FREQUENCY_OPTIONS,
@@ -22,15 +21,30 @@ import {
   submitToGoogleSheets,
 } from "./lib/submissionEngine";
 
+const PenjelasanPenelitian = React.lazy(() =>
+  import("./components/PenjelasanPenelitian").then((m) => ({ default: m.PenjelasanPenelitian }))
+);
+const HasilPenelitian = React.lazy(() =>
+  import("./components/HasilPenelitian").then((m) => ({ default: m.HasilPenelitian }))
+);
+const ResearcherAdminModal = React.lazy(() =>
+  import("./components/ResearcherAdminModal").then((m) => ({ default: m.ResearcherAdminModal }))
+);
+const BrewCupCompanion = React.lazy(() =>
+  import("./components/BrewCupCompanion").then((m) => ({ default: m.BrewCupCompanion }))
+);
+
 type SurveyTab = "profile" | "workload" | "sugar" | "done";
 type StepTab = Exclude<SurveyTab, "done">;
 
 // Pages live in the hash so links can be shared and the back button works
-type View = "beranda" | "kuesioner" | "hasil";
+type View = "beranda" | "penjelasan" | "persetujuan" | "kuesioner" | "hasil";
 const viewFromHash = (hash: string): View => {
   if (hash.startsWith("#/kuesioner") || hash === "#kuesioner" || hash === "#pengantar") {
     return "kuesioner";
   }
+  if (hash.startsWith("#/penjelasan")) return "penjelasan";
+  if (hash.startsWith("#/persetujuan")) return "persetujuan";
   if (hash.startsWith("#/hasil")) return "hasil";
   return "beranda";
 };
@@ -43,7 +57,7 @@ const THEME_KEY = "takaran_theme";
 
 const STEPS: StepTab[] = ["profile", "workload", "sugar"];
 const STEP_NAMES: Record<StepTab, string> = {
-  profile: "Profil & persetujuan",
+  profile: "Profil",
   workload: "Tugas kuliah",
   sugar: "Asupan manis",
 };
@@ -52,16 +66,17 @@ const X_IDS = VARIABLE_X_ITEMS.map((i) => i.id);
 const Y_IDS = VARIABLE_Y_ITEMS.map((i) => i.id);
 const SWEET_IDS = SWEET_CATEGORIES.map((c) => c.id);
 
-// Required answers per step, in on-screen order
+// Required answers per step, in on-screen order. Consent is given on its own
+// page, which stays one step behind step 1.
 const REQUIRED: Record<StepTab, string[]> = {
-  profile: ["consent", "angkatan", "semester", "gender", "age"],
+  profile: ["angkatan", "semester", "gender", "age"],
   workload: X_IDS,
   sugar: [...SWEET_IDS, ...Y_IDS],
 };
 
 // Chip questions in on-screen order; after a first answer we glide to the next open one
 const CHIP_FLOW: Record<StepTab, string[]> = {
-  profile: ["consent", "angkatan", "semester", "gender", "location"],
+  profile: ["angkatan", "semester", "gender", "location"],
   workload: X_IDS,
   sugar: [...SWEET_IDS, ...Y_IDS],
 };
@@ -80,6 +95,11 @@ interface ChoiceOption<T extends string | number> {
 const toOptions = (values: string[]): ChoiceOption<string>[] =>
   values.map((v) => ({ value: v, label: v }));
 
+const ANGKATAN_OPTIONS = toOptions(ANGKATAN);
+const SEMESTERS_OPTIONS = toOptions(SEMESTERS);
+const GENDERS_OPTIONS = toOptions(GENDERS);
+const LOCATIONS_OPTIONS = toOptions(LOCATIONS);
+
 const AGREEMENT: ChoiceOption<number>[] = LIKERT_AGREEMENT_OPTIONS.map((o) => ({
   value: o.value,
   label: o.fullLabel,
@@ -93,8 +113,6 @@ const FREQUENCY: ChoiceOption<number>[] = LIKERT_FREQUENCY_OPTIONS.map((o) => ({
 
 const isAnswered = (s: QuestionnaireState, qid: string): boolean => {
   switch (qid) {
-    case "consent":
-      return s.hasConsented;
     case "angkatan":
       return !!s.demographics.angkatan;
     case "semester":
@@ -143,10 +161,10 @@ interface ChoiceRowProps<T extends string | number> {
   value: T | undefined;
   isMissing: boolean;
   variant?: string;
-  onPick: (value: T) => void;
+  onPick: (qid: string, value: T) => void;
 }
 
-function ChoiceRow<T extends string | number>({
+function ChoiceRowInner<T extends string | number>({
   qid,
   label,
   text,
@@ -185,7 +203,7 @@ function ChoiceRow<T extends string | number>({
               type="button"
               aria-pressed={selected}
               className={`chip ${opt.hint ? "chip-has-hint" : ""} ${selected ? "is-selected" : ""}`}
-              onClick={() => onPick(opt.value)}
+              onClick={() => onPick(qid, opt.value)}
             >
               <span>{opt.label}</span>
               {opt.hint && <small className="chip-hint">{opt.hint}</small>}
@@ -196,6 +214,8 @@ function ChoiceRow<T extends string | number>({
     </div>
   );
 }
+
+const ChoiceRow = React.memo(ChoiceRowInner) as typeof ChoiceRowInner;
 
 export function App() {
   const isResearcher = useMemo(detectResearcher, []);
@@ -250,6 +270,8 @@ export function App() {
   const noteRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
   const glideTimer = useRef<number>(0);
 
   // Auto-save draft and current step to localStorage
@@ -301,16 +323,23 @@ export function App() {
     };
   }, []);
 
-  // Tuck masthead on scroll down, show on scroll up
+  // Tuck masthead on scroll down, show on scroll up (throttled via requestAnimationFrame)
   useEffect(() => {
     let lastY = window.scrollY;
+    let ticking = false;
     const onScroll = () => {
-      const y = window.scrollY;
-      const dy = y - lastY;
-      lastY = y;
-      setIsScrolled(y > 8);
-      if (y < 140 || dy < -4) setIsTucked(false);
-      else if (dy > 6) setIsTucked(true);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const y = window.scrollY;
+          const dy = y - lastY;
+          lastY = y;
+          setIsScrolled(y > 8);
+          if (y < 140 || dy < -4) setIsTucked(false);
+          else if (dy > 6) setIsTucked(true);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -327,7 +356,6 @@ export function App() {
   // Overall progress (0..1) fills the cup above the sheet
   const { riseProgress, answeredCount, totalCount } = useMemo(() => {
     const totalPoints =
-      1 + // consent
       4 + // angkatan, semester, age, gender
       VARIABLE_X_ITEMS.length +
       SWEET_CATEGORIES.length +
@@ -342,7 +370,6 @@ export function App() {
     }
 
     let filled = 0;
-    if (state.hasConsented) filled += 1;
     if (state.demographics.angkatan) filled += 1;
     if (state.demographics.semester) filled += 1;
     if (state.demographics.age) filled += 1;
@@ -405,8 +432,8 @@ export function App() {
 
   // After a first answer, bring the next unanswered question into view if it is off-screen
   const glideToNext = (qid: string) => {
-    if (activeTab === "done") return;
-    const flow = CHIP_FLOW[activeTab];
+    if (activeTabRef.current === "done") return;
+    const flow = CHIP_FLOW[activeTabRef.current];
     const idx = flow.indexOf(qid);
     if (idx < 0) return;
     window.clearTimeout(glideTimer.current);
@@ -421,14 +448,51 @@ export function App() {
     }, 320);
   };
 
-  const answer = (qid: string, apply: (prev: QuestionnaireState) => QuestionnaireState) => {
-    const wasAnswered = isAnswered(state, qid);
+  const answer = useCallback((qid: string, apply: (prev: QuestionnaireState) => QuestionnaireState) => {
+    const wasAnswered = isAnswered(stateRef.current, qid);
     triggerCupNudge();
     setErrorMsg("");
     clearMissing(qid);
     setState(apply);
     if (!wasAnswered) glideToNext(qid);
-  };
+  }, []);
+
+  const handlePickAngkatan = useCallback((qid: string, v: string) => {
+    answer(qid, setDemo({ angkatan: v }));
+  }, [answer]);
+
+  const handlePickSemester = useCallback((qid: string, v: string) => {
+    answer(qid, setDemo({ semester: v }));
+  }, [answer]);
+
+  const handlePickGender = useCallback((qid: string, v: string) => {
+    answer(qid, setDemo({ gender: v }));
+  }, [answer]);
+
+  const handlePickLocation = useCallback((qid: string, v: string) => {
+    answer(qid, setDemo({ studyLocation: v, residence: "Yogyakarta" }));
+  }, [answer]);
+
+  const handlePickWorkload = useCallback((qid: string, v: number) => {
+    answer(qid, (prev) => ({
+      ...prev,
+      variableXAnswers: { ...prev.variableXAnswers, [qid]: v },
+    }));
+  }, [answer]);
+
+  const handlePickSweet = useCallback((qid: string, v: number) => {
+    answer(qid, (prev) => ({
+      ...prev,
+      sweetCategoryFrequency: { ...prev.sweetCategoryFrequency, [qid]: v },
+    }));
+  }, [answer]);
+
+  const handlePickSugarY = useCallback((qid: string, v: number) => {
+    answer(qid, (prev) => ({
+      ...prev,
+      variableYAnswers: { ...prev.variableYAnswers, [qid]: v },
+    }));
+  }, [answer]);
 
   const updateField = (patch: Partial<DemographicsData>, qid?: string) => {
     setErrorMsg("");
@@ -449,9 +513,7 @@ export function App() {
     if (open.length === 0) return true;
     setMissing(new Set(open));
     setErrorMsg(
-      open.length === 1 && open[0] === "consent"
-        ? "Pilih persetujuan partisipasi terlebih dahulu."
-        : `Masih ada ${open.length} pertanyaan yang belum dijawab. Yang bertanda merah perlu diisi.`
+      `Masih ada ${open.length} pertanyaan yang belum dijawab. Yang bertanda merah perlu diisi.`
     );
     requestAnimationFrame(() => scrollToQuestion(open[0], true));
     return false;
@@ -486,11 +548,41 @@ export function App() {
     setView(next);
   };
 
+  const needsConsent = !state.hasConsented && activeTab !== "done";
+
+  // Consent is given once and kept with the draft. A respondent who already
+  // agreed goes straight on from where they stopped.
   const openKuesioner = () => {
     soundEngine.playIceClink();
+    if (needsConsent) {
+      navigate("persetujuan");
+      return;
+    }
     resumeOnOpen.current = activeTab !== "done" && answeredCount > 0;
     navigate("kuesioner");
   };
+
+  const setConsent = (agreed: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      hasConsented: agreed,
+      consentTimestamp: agreed ? prev.consentTimestamp ?? new Date().toISOString() : null,
+    }));
+  };
+
+  const handleAgree = () => {
+    soundEngine.playSugarDrop();
+    resumeOnOpen.current = activeTab !== "done" && answeredCount > 0;
+    navigate("kuesioner");
+  };
+
+  // The questions stay closed until consent is given, even by direct link
+  useEffect(() => {
+    if (view === "kuesioner" && needsConsent) {
+      window.history.replaceState(null, "", "#/persetujuan");
+      setView("persetujuan");
+    }
+  }, [view, needsConsent]);
 
   // A new page starts at its top, unless the respondent is picking up where they left off
   useEffect(() => {
@@ -608,7 +700,10 @@ export function App() {
     setState(INITIAL_QUESTIONNAIRE_STATE);
     setReceipt(null);
     setIsSentFlare(false);
-    goToStep("profile");
+    setErrorMsg("");
+    setMissing(new Set());
+    setActiveTab("profile");
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
 
   const sidebarCopy = {
@@ -675,16 +770,6 @@ export function App() {
               Beranda
             </a>
           )}
-          {isResearcher && (
-            <button
-              type="button"
-              className="nav-link nav-data"
-              onClick={() => setIsAdminOpen(true)}
-              title="Buka panel data peneliti"
-            >
-              Data
-            </button>
-          )}
           <button
             type="button"
             className="icon-btn"
@@ -709,7 +794,7 @@ export function App() {
           >
             {isNightMode ? <Sun size={18} weight="bold" /> : <Moon size={18} weight="bold" />}
           </button>
-          {view === "kuesioner" && (
+          {view === "kuesioner" && !needsConsent && (
             <a
               className="nav-progress"
               href="#/kuesioner"
@@ -734,85 +819,40 @@ export function App() {
             playIntro={!introDone}
             resumePercent={activeTab !== "done" && answeredCount > 0 ? pct : 0}
             onIntroEnd={() => setIntroDone(true)}
+            onOpenPenjelasan={() => navigate("penjelasan")}
             onOpenKuesioner={openKuesioner}
             onOpenHasil={() => navigate("hasil")}
           />
         )}
 
-        {view === "hasil" && (
-          <HasilPenelitian onOpenKuesioner={openKuesioner} onBack={() => navigate("beranda")} />
+        {view === "penjelasan" && (
+          <Suspense fallback={<div style={{ minHeight: "50vh" }} />}>
+            <PenjelasanPenelitian
+              onOpenKuesioner={openKuesioner}
+              onBack={() => navigate("beranda")}
+            />
+          </Suspense>
         )}
 
-        {view === "kuesioner" && (
+        {view === "hasil" && (
+          <Suspense fallback={<div className="hasil-loading" style={{ minHeight: "50vh" }} />}>
+            <HasilPenelitian onOpenKuesioner={openKuesioner} onBack={() => navigate("beranda")} />
+          </Suspense>
+        )}
+
+        {view === "persetujuan" && (
+          <Persetujuan
+            agreed={state.hasConsented}
+            isResuming={state.hasConsented && answeredCount > 0}
+            onToggle={setConsent}
+            onAgree={handleAgree}
+            onDecline={() => navigate("beranda")}
+            onOpenPenjelasan={() => navigate("penjelasan")}
+          />
+        )}
+
+        {view === "kuesioner" && !needsConsent && (
           <>
-            {/* Minimal Editorial About Section */}
-            <section
-              className="section-wrap about-section"
-              id="pengantar"
-              aria-labelledby="aboutTitle"
-            >
-              <h1 className="section-title" id="aboutTitle">
-                Tentang Riset
-              </h1>
-
-              <div className="about-body">
-                <p className="about-lead">
-                  Tumpukan tugas di layar laptop dan segelas manis dingin di
-                  sebelah catatanmu.
-                </p>
-                <p className="about-text">
-                  Penelitian Tugas Metode Penelitian Kuantitatif ini mengkaji bagaimana{" "}
-                  <strong>
-                    Kecenderungan Perilaku Konsumsi Tinggi Gula saat Menghadapi
-                    Tuntutan Akademik
-                  </strong>{" "}
-                  pada mahasiswa S1 Fakultas Psikologi Universitas Gadjah Mada. Tidak ada
-                  jawaban benar maupun salah.
-                </p>
-                <p className="about-aside">
-                  Setiap butir jawaban yang kamu pilih akan menambah gula batu dan
-                  mengisi gelas takar di atas lembar kuesioner.
-                </p>
-              </div>
-
-              <dl className="about-stack">
-                <div>
-                  <dt>Partisipan</dt>
-                  <dd>Mahasiswa aktif S1 Psikologi UGM</dd>
-                </div>
-                <div>
-                  <dt>Durasi</dt>
-                  <dd>Sekitar 3–4 menit (16 pernyataan singkat)</dd>
-                </div>
-                <div>
-                  <dt>Apresiasi</dt>
-                  <dd>Undian saldo GoPay / ShopeePay Rp 50.000 untuk 10 responden</dd>
-                </div>
-                <div>
-                  <dt>Kerahasiaan</dt>
-                  <dd>Dijamin anonim &amp; progres tersimpan otomatis</dd>
-                </div>
-              </dl>
-            </section>
-
-            {/* Full-bleed Kinetic Marquee with Sugar Cubes & Boba Pearls */}
-            <div className="marquee" aria-hidden="true">
-              <div className="marquee-track">
-                {[0, 1, 2, 3].map((g) => (
-                  <div className="marquee-group" key={g}>
-                    <span className="marquee-item">Tumpukan Tugas</span>
-                    <i className="marquee-cube" />
-                    <span className="marquee-item is-outline">Kopi Gula Aren</span>
-                    <i className="marquee-boba" />
-                    <span className="marquee-item">Kejar Deadline</span>
-                    <i className="marquee-cube" />
-                    <span className="marquee-item is-outline">Takaran Manis</span>
-                    <i className="marquee-boba" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* The Questionnaire Scene: the cup fills up as you answer */}
             <section
               className="section-wrap survey-body"
@@ -827,9 +867,9 @@ export function App() {
                   <span>Tersimpan otomatis di browser</span>
                 </p>
 
-                <h2 className="survey-title" id="surveyHeading">
+                <h1 className="survey-title" id="surveyHeading">
                   {sidebarCopy.title}
-                </h2>
+                </h1>
                 <p className="survey-lede">{sidebarCopy.lede}</p>
 
                 <div className="survey-steps" role="tablist" aria-label="Tahapan kuesioner">
@@ -879,100 +919,65 @@ export function App() {
                 ref={noteRef}
                 style={{ ["--rise" as string]: riseProgress.toFixed(3) }}
               >
-                <BrewCupCompanion
-                  progress={riseProgress}
-                  isNudged={isNudged}
-                  isSent={isSentFlare}
-                  answeredCount={answeredCount}
-                  totalCount={totalCount}
-                />
+                <Suspense fallback={null}>
+                  <BrewCupCompanion
+                    progress={riseProgress}
+                    isNudged={isNudged}
+                    isSent={isSentFlare}
+                    answeredCount={answeredCount}
+                    totalCount={totalCount}
+                  />
+                </Suspense>
 
                 <div className="note">
-                  {/* TAB 1: PROFILE & CONSENT */}
+                  {/* TAB 1: PROFILE */}
                   {activeTab === "profile" && (
                     <>
                       <div>
                         {stepKicker("profile", 1)}
                         <p className="note-phrase">
-                          Saya mahasiswa aktif S1 Psikologi UGM dan bersedia ikut
-                          secara sukarela.
+                          Sedikit tentang dirimu sebagai mahasiswa S1 Psikologi UGM.
                         </p>
                       </div>
 
                       <div className="q-list">
-                        <div
-                          className={`q-item ${missing.has("consent") ? "is-missing" : ""}`}
-                          data-qid="consent"
-                        >
-                          <span className="q-num">
-                            Persetujuan
-                            {missing.has("consent") && <em className="q-missing">Belum dipilih</em>}
-                          </span>
-                          <div className="chips">
-                            <button
-                              type="button"
-                              aria-pressed={state.hasConsented}
-                              className={`chip chip-consent ${state.hasConsented ? "is-selected" : ""}`}
-                              onClick={() =>
-                                answer("consent", (prev) => ({
-                                  ...prev,
-                                  hasConsented: !prev.hasConsented,
-                                  consentTimestamp: !prev.hasConsented
-                                    ? new Date().toISOString()
-                                    : null,
-                                }))
-                              }
-                            >
-                              <span className="chip-check" aria-hidden="true">
-                                {state.hasConsented && <Check size={12} weight="bold" />}
-                              </span>
-                              <span>Ya, saya setuju &amp; bersedia berpartisipasi</span>
-                            </button>
-                          </div>
-                        </div>
-
                         <ChoiceRow
                           qid="angkatan"
                           label="Angkatan"
                           text="Tahun masuk S1 Psikologi UGM"
-                          options={toOptions(ANGKATAN)}
+                          options={ANGKATAN_OPTIONS}
                           value={state.demographics.angkatan}
                           isMissing={missing.has("angkatan")}
-                          onPick={(v) => answer("angkatan", setDemo({ angkatan: v }))}
+                          onPick={handlePickAngkatan}
                         />
 
                         <ChoiceRow
                           qid="semester"
                           label="Semester"
                           text="Semester yang sedang ditempuh"
-                          options={toOptions(SEMESTERS)}
+                          options={SEMESTERS_OPTIONS}
                           value={state.demographics.semester}
                           isMissing={missing.has("semester")}
-                          onPick={(v) => answer("semester", setDemo({ semester: v }))}
+                          onPick={handlePickSemester}
                         />
 
                         <ChoiceRow
                           qid="gender"
                           label="Jenis kelamin"
-                          options={toOptions(GENDERS)}
+                          options={GENDERS_OPTIONS}
                           value={state.demographics.gender}
                           isMissing={missing.has("gender")}
-                          onPick={(v) => answer("gender", setDemo({ gender: v }))}
+                          onPick={handlePickGender}
                         />
 
                         <ChoiceRow
                           qid="location"
                           label="Tempat nugas utama (opsional)"
                           text="Lokasi paling sering saat mengerjakan tugas"
-                          options={toOptions(LOCATIONS)}
+                          options={LOCATIONS_OPTIONS}
                           value={state.demographics.studyLocation}
                           isMissing={false}
-                          onPick={(v) =>
-                            answer(
-                              "location",
-                              setDemo({ studyLocation: v, residence: "Yogyakarta" })
-                            )
-                          }
+                          onPick={handlePickLocation}
                         />
                       </div>
 
@@ -1033,9 +1038,13 @@ export function App() {
                       )}
 
                       <div className="note-send">
-                        <span className="note-send-hint">
-                          Gelas di atas terisi setiap kali kamu memilih jawaban.
-                        </span>
+                        <button
+                          type="button"
+                          className="ghost-btn"
+                          onClick={() => navigate("persetujuan")}
+                        >
+                          Kembali
+                        </button>
                         <button
                           type="button"
                           className="note-btn"
@@ -1118,12 +1127,7 @@ export function App() {
                               value={state.variableXAnswers[item.id]}
                               isMissing={missing.has(item.id)}
                               variant="chips-likert-agreement"
-                              onPick={(v) =>
-                                answer(item.id, (prev) => ({
-                                  ...prev,
-                                  variableXAnswers: { ...prev.variableXAnswers, [item.id]: v },
-                                }))
-                              }
+                              onPick={handlePickWorkload}
                             />
                           ))}
                         </div>
@@ -1177,15 +1181,7 @@ export function App() {
                               value={state.sweetCategoryFrequency[cat.id]}
                               isMissing={missing.has(cat.id)}
                               variant="chips-likert-frequency"
-                              onPick={(v) =>
-                                answer(cat.id, (prev) => ({
-                                  ...prev,
-                                  sweetCategoryFrequency: {
-                                    ...prev.sweetCategoryFrequency,
-                                    [cat.id]: v,
-                                  },
-                                }))
-                              }
+                              onPick={handlePickSweet}
                             />
                           ))}
                         </div>
@@ -1206,12 +1202,7 @@ export function App() {
                               value={state.variableYAnswers[item.id]}
                               isMissing={missing.has(item.id)}
                               variant="chips-likert-agreement"
-                              onPick={(v) =>
-                                answer(item.id, (prev) => ({
-                                  ...prev,
-                                  variableYAnswers: { ...prev.variableYAnswers, [item.id]: v },
-                                }))
-                              }
+                              onPick={handlePickSugarY}
                             />
                           ))}
                         </div>
@@ -1362,10 +1353,14 @@ export function App() {
         </footer>
       )}
 
-      <ResearcherAdminModal
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-      />
+      {isAdminOpen && (
+        <Suspense fallback={null}>
+          <ResearcherAdminModal
+            isOpen={isAdminOpen}
+            onClose={() => setIsAdminOpen(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

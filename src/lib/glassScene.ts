@@ -428,6 +428,8 @@ export const createGlassScene = (opts: SceneOptions): GlassScene => {
   const drops: Speck[] = [];
   const rings: Ring[] = [];
   let sediment = 0;
+  let lastX: number | null = null;
+  let lastY: number | null = null;
 
   const motes: Mote[] = (() => {
     const rnd = seeded(331);
@@ -1458,10 +1460,12 @@ export const createGlassScene = (opts: SceneOptions): GlassScene => {
     }
 
     // Light and shadow on the wall and desk, under everything else. Soft
-    // light needs no more than every third frame, unless the glass moves.
+    // light uses expensive canvas blur filters, so we throttle updates when idle.
     if (lctx) {
       const key = `${v.cx.toFixed(1)} ${v.top.toFixed(1)} ${v.u.toFixed(2)} ${W} ${Hpx} ${night}`;
-      if (key !== lightKey || ++lightAge >= 3) {
+      const isDynamic = glide !== null || cubes.some((c) => c.stage === 0) || lastX !== null;
+      const maxAge = isDynamic ? 3 : 24;
+      if (key !== lightKey || ++lightAge >= maxAge) {
         drawLight(v, now);
         lightKey = key;
         lightAge = 0;
@@ -1844,24 +1848,17 @@ export const createGlassScene = (opts: SceneOptions): GlassScene => {
   // Fixed 60 Hz physics steps keep the springs stable on any display
   let last = 0;
   let acc = 0;
-  let frames = 0;
   const step = (now: number) => {
-    // Late fonts or reflowing copy can move the home slot without resizing the
-    // hero, which a ResizeObserver would miss
-    if (++frames % 15 === 0) {
-      const m = opts.measure();
-      if (m) slots = m;
-    }
-    const dt = last ? Math.min(100, now - last) : 16.667;
+    const dt = last ? Math.min(50, now - last) : 16.667;
     last = now;
     acc += dt;
     let n = 0;
-    while (acc >= 16.667 && n < 4) {
+    while (acc >= 16.667 && n < 2) {
       update(now);
       acc -= 16.667;
       n++;
     }
-    if (n === 4) acc = 0;
+    if (n === 2) acc = 0;
     render(now);
   };
 
@@ -1891,8 +1888,12 @@ export const createGlassScene = (opts: SceneOptions): GlassScene => {
     W = rect.width;
     Hpx = rect.height;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(Hpx * dpr);
+    const targetW = Math.round(W * dpr);
+    const targetH = Math.round(Hpx * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
     const m = opts.measure();
     if (m) slots = m;
     if (!running) step(performance.now());
@@ -1901,6 +1902,12 @@ export const createGlassScene = (opts: SceneOptions): GlassScene => {
   resize();
   const ro = new ResizeObserver(resize);
   ro.observe(host);
+  const onWinResize = () => resize();
+  window.addEventListener("resize", onWinResize, { passive: true });
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    document.fonts.ready.then(resize).catch(() => {});
+  }
+
   const io = new IntersectionObserver(([entry]) => {
     inView = entry.isIntersecting;
     sync();
@@ -1910,8 +1917,6 @@ export const createGlassScene = (opts: SceneOptions): GlassScene => {
   sync();
 
   // Stir the tea with the pointer
-  let lastX: number | null = null;
-  let lastY: number | null = null;
   const onMove = (e: PointerEvent) => {
     const r = host.getBoundingClientRect();
     const v = view();
@@ -1984,6 +1989,7 @@ export const createGlassScene = (opts: SceneOptions): GlassScene => {
     },
     destroy: () => {
       stop();
+      window.removeEventListener("resize", onWinResize);
       ro.disconnect();
       io.disconnect();
       document.removeEventListener("visibilitychange", sync);
