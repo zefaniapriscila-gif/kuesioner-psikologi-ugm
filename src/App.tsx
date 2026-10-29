@@ -7,6 +7,7 @@ import { soundEngine } from "./lib/soundEngine";
 import { Check, Moon, SpeakerHigh, SpeakerSlash, Sun } from "./components/Icons";
 import {
   LIKERT_AGREEMENT_OPTIONS,
+  LIKERT_AGREEMENT_5_OPTIONS,
   LIKERT_FREQUENCY_OPTIONS,
   QUANTITATIVE_TASK_METRICS,
   SWEET_CATEGORIES,
@@ -105,6 +106,11 @@ const AGREEMENT: ChoiceOption<number>[] = LIKERT_AGREEMENT_OPTIONS.map((o) => ({
   label: o.fullLabel,
 }));
 
+const TASK_AGREEMENT: ChoiceOption<number>[] = LIKERT_AGREEMENT_5_OPTIONS.map((o) => ({
+  value: o.value,
+  label: o.fullLabel,
+}));
+
 const FREQUENCY: ChoiceOption<number>[] = LIKERT_FREQUENCY_OPTIONS.map((o) => ({
   value: o.value,
   label: o.fullLabel,
@@ -157,7 +163,6 @@ const mergeSavedState = (saved: Partial<QuestionnaireState> | null): Questionnai
     },
     variableXAnswers: {
       ...INITIAL_QUESTIONNAIRE_STATE.variableXAnswers,
-      ...(saved.variableXAnswers ?? {}),
     },
     sweetCategoryFrequency: {
       ...INITIAL_QUESTIONNAIRE_STATE.sweetCategoryFrequency,
@@ -413,7 +418,7 @@ export function App() {
     if (state.demographics.age) filled += 1;
     if (state.demographics.gender) filled += 1;
 
-    filled += Object.keys(state.variableXAnswers).length;
+    filled += VARIABLE_X_ITEMS.filter((item) => state.variableXAnswers[item.id] != null).length;
     filled += Object.keys(state.sweetCategoryFrequency).length;
     filled += Object.keys(state.variableYAnswers).length;
 
@@ -1151,7 +1156,7 @@ export function App() {
 
                       <div className="q-group">
                         <p className="q-group-title">
-                          Seberapa sesuai pernyataan berikut dengan kondisimu?
+                          Pilih tingkat persetujuanmu terhadap pernyataan berikut.
                         </p>
                         <div className="q-list">
                           {VARIABLE_X_ITEMS.map((item, idx) => (
@@ -1160,7 +1165,7 @@ export function App() {
                               qid={item.id}
                               label={`Pernyataan ${idx + 1} dari ${VARIABLE_X_ITEMS.length}`}
                               text={item.text}
-                              options={AGREEMENT}
+                              options={TASK_AGREEMENT}
                               value={state.variableXAnswers[item.id]}
                               isMissing={missing.has(item.id)}
                               variant="chips-likert-agreement"

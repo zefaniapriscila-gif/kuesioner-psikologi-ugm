@@ -11,7 +11,7 @@ export interface ScaleItem {
   dimension: string;
   text: string;
   contextHint?: string;
-  isFavorable: boolean; // true = normal (1..4), false = reverse scored (4..1)
+  isFavorable: boolean;
 }
 
 export interface QuantitativeTaskMetric {
@@ -119,6 +119,39 @@ export const LIKERT_AGREEMENT_OPTIONS: LikertOption[] = [
   },
 ];
 
+export const LIKERT_AGREEMENT_5_OPTIONS: LikertOption[] = [
+  {
+    value: 1,
+    shortLabel: "STS",
+    fullLabel: "Sangat Tidak Setuju",
+    description: "Sangat tidak setuju",
+  },
+  {
+    value: 2,
+    shortLabel: "TS",
+    fullLabel: "Tidak Setuju",
+    description: "Tidak setuju",
+  },
+  {
+    value: 3,
+    shortLabel: "N",
+    fullLabel: "Netral",
+    description: "Netral",
+  },
+  {
+    value: 4,
+    shortLabel: "S",
+    fullLabel: "Setuju",
+    description: "Setuju",
+  },
+  {
+    value: 5,
+    shortLabel: "SS",
+    fullLabel: "Sangat Setuju",
+    description: "Sangat setuju",
+  },
+];
+
 export const LIKERT_FREQUENCY_OPTIONS: LikertOption[] = [
   {
     value: 1,
@@ -187,64 +220,7 @@ export const VARIABLE_X_ITEMS: ScaleItem[] = [
     id: "vx_1",
     code: "X-01",
     dimension: "Kuantitas & Akumulasi Tugas",
-    text: "Dalam satu minggu perkuliahan, saya sering menerima tugas baru padahal tugas dari mata kuliah lain belum selesai dikerjakan.",
-    contextHint: "Akumulasi tenggat waktu (deadline) yang saling berhimpitan",
-    isFavorable: true,
-  },
-  {
-    id: "vx_2",
-    code: "X-02",
-    dimension: "Intensitas Kognitif",
-    text: "Penyusunan laporan praktikum, analisis kasus, dan telaah jurnal di Psikologi UGM menyita sebagian besar waktu luang saya setiap pekan.",
-    contextHint: "Beban kerja kognitif di luar tatap muka kelas",
-    isFavorable: true,
-  },
-  {
-    id: "vx_3",
-    code: "X-03",
-    dimension: "Keseimbangan Waktu",
-    text: "Saya merasa durasi waktu yang diberikan dosen selalu sangat longgar sehingga saya dapat menyelesaikan seluruh tugas tanpa terburu-buru.",
-    contextHint: "Butir Unfavorable — persepsi kelonggaran waktu",
-    isFavorable: false,
-  },
-  {
-    id: "vx_4",
-    code: "X-04",
-    dimension: "Koordinasi Kelompok",
-    text: "Banyaknya penugasan berbasis kelompok membuat saya harus mengalokasikan waktu ekstra untuk diskusi dan penyelarasan draf hampir setiap hari.",
-    contextHint: "Frekuensi kerja kolaboratif & rapat kelompok",
-    isFavorable: true,
-  },
-  {
-    id: "vx_5",
-    code: "X-05",
-    dimension: "Tekanan Tenggat Waktu",
-    text: "Ketika mendekati tengah atau akhir semester, jumlah tagihan tugas akademik membuat waktu istirahat malam saya berkurang secara signifikan.",
-    contextHint: "Dampak volume tugas terhadap jam pemulihan",
-    isFavorable: true,
-  },
-  {
-    id: "vx_6",
-    code: "X-06",
-    dimension: "Keterkelolaan Beban",
-    text: "Jumlah tugas kuliah saya semester ini tergolong sedikit dan tidak pernah membuat saya merasa kelelahan mental.",
-    contextHint: "Butir Unfavorable — persepsi beban minimal",
-    isFavorable: false,
-  },
-  {
-    id: "vx_7",
-    code: "X-07",
-    dimension: "Tuntutan Akademik Berlapis",
-    text: "Dalam satu hari yang sama, saya kerap harus berpindah fokus mengerjakan lebih dari dua jenis tugas akademik yang berbeda.",
-    contextHint: "Multitasking akademik harian",
-    isFavorable: true,
-  },
-  {
-    id: "vx_8",
-    code: "X-08",
-    dimension: "Kepadatan Mingguan",
-    text: "Akhir pekan (Sabtu dan Minggu) tetap saya gunakan secara intensif untuk mencicil atau menuntaskan tugas perkuliahan.",
-    contextHint: "Ekspansi waktu belajar ke akhir pekan",
+    text: "Saya memiliki banyak tugas akademik yang harus diselesaikan.",
     isFavorable: true,
   },
 ];

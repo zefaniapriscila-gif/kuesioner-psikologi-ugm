@@ -76,13 +76,13 @@ export function computeQuestionnaireSummary(
 
   for (const item of VARIABLE_X_ITEMS) {
     const raw = state.variableXAnswers[item.id] ?? 2;
-    // 4-point scale: if favorable -> raw (1..4); if unfavorable -> 5 - raw (4..1)
-    const recoded = item.isFavorable ? raw : 5 - raw;
+    // The workload item uses a 5-point agreement scale.
+    const recoded = item.isFavorable ? raw : 6 - raw;
     recodedVariableX[item.code] = recoded;
     variableXTotalScore += recoded;
   }
 
-  const variableXMaxPossible = VARIABLE_X_ITEMS.length * 4;
+  const variableXMaxPossible = VARIABLE_X_ITEMS.length * 5;
   const variableXPercentage = Math.round(
     (variableXTotalScore / variableXMaxPossible) * 100
   );
