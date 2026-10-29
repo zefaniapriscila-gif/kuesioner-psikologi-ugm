@@ -3,7 +3,8 @@
 export const STUDY_TITLE =
   "Jumlah Tugas Akademik dan Kecenderungan Perilaku Konsumsi Tinggi Gula pada Mahasiswa S1 Psikologi UGM";
 
-export const STUDY_GROUP = "Kelompok 9, Metode Penelitian Kuantitatif kelas D, Psikologi UGM";
+export const STUDY_GROUP =
+  "Kelompok 9 Metode Penelitian Kuantitatif D, Fakultas Psikologi Universitas Gadjah Mada";
 
 export const STUDY_DURATION = "Sekitar 3–4 menit";
 
