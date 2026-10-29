@@ -394,7 +394,7 @@ export const Beranda: React.FC<BerandaProps> = ({
       label: isResuming ? "Lanjutkan Penelitian" : "Mulai Penelitian",
       sub: isResuming
         ? `Sudah terisi ${resumePercent}%, lanjut dari yang belum dijawab`
-        : "3–4 menit, anonim, ada undian Rp\u00a050.000",
+        : "3–4 menit, anonim",
       open: onOpenKuesioner,
       primary: true,
     },

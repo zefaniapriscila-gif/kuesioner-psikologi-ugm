@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { GOOGLE_APPS_SCRIPT_TEMPLATE } from "../lib/submissionEngine";
+import { ALL_QUESTIONS } from "../data/questionnaireData";
+
+const QUESTION_KEYS = ALL_QUESTIONS.map((q) => q.id.toUpperCase());
 
 interface ResearcherAdminModalProps {
   isOpen: boolean;
@@ -180,8 +183,9 @@ export const ResearcherAdminModal: React.FC<ResearcherAdminModalProps> = ({
                       <th>ID</th>
                       <th>Inisial</th>
                       <th>Angkatan</th>
-                      <th>Skor Tugas (X)</th>
-                      <th>Skor Gula (Y)</th>
+                      {QUESTION_KEYS.map((k) => (
+                        <th key={k}>{k}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -190,14 +194,9 @@ export const ResearcherAdminModal: React.FC<ResearcherAdminModalProps> = ({
                         <td>{String(sub.submissionId)}</td>
                         <td>{String(sub.initials)}</td>
                         <td>{String(sub.angkatan)}</td>
-                        <td>
-                          {String(sub.variableXTotalScore)} (
-                          {String(sub.variableXCategory)})
-                        </td>
-                        <td>
-                          {String(sub.variableYTotalScore)} (
-                          {String(sub.variableYCategory)})
-                        </td>
+                        {QUESTION_KEYS.map((k) => (
+                          <td key={k}>{String(sub[k] ?? "")}</td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>

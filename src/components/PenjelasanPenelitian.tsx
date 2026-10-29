@@ -67,7 +67,7 @@ export const PenjelasanPenelitian: React.FC<PenjelasanPenelitianProps> = ({
     <a className={`cta ${className}`} href="#/kuesioner" onClick={start}>
       <i className="cube-dot cta-cube" aria-hidden="true" />
       <span className="cta-label">Mulai Penelitian</span>
-      <span className="cta-sub">3–4 menit, anonim, ada undian Rp&nbsp;50.000</span>
+      <span className="cta-sub">3–4 menit, anonim</span>
     </a>
   );
 

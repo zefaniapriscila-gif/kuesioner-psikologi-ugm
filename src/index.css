@@ -2613,6 +2613,19 @@ button.text-link {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.chips-scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.chips-scale .chip {
+  justify-content: center;
+  height: auto;
+  min-height: 44px;
+  line-height: 1.25;
+  text-align: center;
+}
+
 .chip-has-hint {
   flex-direction: column;
   align-items: flex-start;
@@ -3159,6 +3172,18 @@ body {
   }
 
   /* Frequency options: full-width list, meaning on the right */
+  .chips.chips-scale {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 7px;
+  }
+  .chips.chips-scale .chip {
+    justify-content: flex-start;
+    width: 100%;
+    text-align: left;
+  }
+
   .chips.chips-likert-frequency {
     display: flex;
     flex-direction: column;

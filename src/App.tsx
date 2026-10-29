@@ -5,16 +5,8 @@ import { CubeMark } from "./components/CubeMark";
 import { Persetujuan } from "./components/Persetujuan";
 import { soundEngine } from "./lib/soundEngine";
 import { Check, Moon, SpeakerHigh, SpeakerSlash, Sun } from "./components/Icons";
+import { ANGKATAN, Question, SUGAR_QUESTIONS, TASK_QUESTIONS } from "./data/questionnaireData";
 import {
-  LIKERT_AGREEMENT_OPTIONS,
-  LIKERT_FREQUENCY_OPTIONS,
-  QUANTITATIVE_TASK_METRICS,
-  SWEET_CATEGORIES,
-  VARIABLE_X_ITEMS,
-  VARIABLE_Y_ITEMS,
-} from "./data/questionnaireData";
-import {
-  ComputedSummary,
   DemographicsData,
   INITIAL_QUESTIONNAIRE_STATE,
   QuestionnaireState,
@@ -51,40 +43,37 @@ const viewFromHash = (hash: string): View => {
 
 const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const STORAGE_KEY = "ugm_psi_questionnaire_draft_v2";
-const TAB_KEY = "ugm_psi_questionnaire_tab_v2";
+// v3: the questions now follow the group's design doc, older drafts no longer fit
+const STORAGE_KEY = "ugm_psi_questionnaire_draft_v3";
+const TAB_KEY = "ugm_psi_questionnaire_tab_v3";
 const THEME_KEY = "takaran_theme";
 
 const STEPS: StepTab[] = ["profile", "workload", "sugar"];
 const STEP_NAMES: Record<StepTab, string> = {
-  profile: "Profil",
-  workload: "Tugas kuliah",
-  sugar: "Asupan manis",
+  profile: "Identitas",
+  workload: "Tugas akademik",
+  sugar: "Konsumsi gula",
 };
 
-const X_IDS = VARIABLE_X_ITEMS.map((i) => i.id);
-const Y_IDS = VARIABLE_Y_ITEMS.map((i) => i.id);
-const SWEET_IDS = SWEET_CATEGORIES.map((c) => c.id);
+const TASK_IDS = TASK_QUESTIONS.map((q) => q.id);
+const SUGAR_IDS = SUGAR_QUESTIONS.map((q) => q.id);
 
 // Required answers per step, in on-screen order. Consent is given on its own
 // page, which stays one step behind step 1.
 const REQUIRED: Record<StepTab, string[]> = {
-  profile: ["angkatan", "semester", "gender", "age"],
-  workload: X_IDS,
-  sugar: [...SWEET_IDS, ...Y_IDS],
+  profile: ["initials", "angkatan"],
+  workload: TASK_IDS,
+  sugar: SUGAR_IDS,
 };
 
 // Chip questions in on-screen order; after a first answer we glide to the next open one
 const CHIP_FLOW: Record<StepTab, string[]> = {
-  profile: ["angkatan", "semester", "gender", "location"],
-  workload: X_IDS,
-  sugar: [...SWEET_IDS, ...Y_IDS],
+  profile: ["angkatan"],
+  workload: TASK_IDS,
+  sugar: SUGAR_IDS,
 };
 
-const ANGKATAN = ["2021", "2022", "2023", "2024", "2025"];
-const SEMESTERS = ["Semester 2", "Semester 4", "Semester 6", "Semester 8+"];
-const GENDERS = ["Perempuan", "Laki-laki"];
-const LOCATIONS = ["Kamar kos / rumah", "Perpustakaan kampus", "Kafe / coffee shop"];
+const QUESTION_COUNT = TASK_IDS.length + SUGAR_IDS.length;
 
 interface ChoiceOption<T extends string | number> {
   value: T;
@@ -96,39 +85,23 @@ const toOptions = (values: string[]): ChoiceOption<string>[] =>
   values.map((v) => ({ value: v, label: v }));
 
 const ANGKATAN_OPTIONS = toOptions(ANGKATAN);
-const SEMESTERS_OPTIONS = toOptions(SEMESTERS);
-const GENDERS_OPTIONS = toOptions(GENDERS);
-const LOCATIONS_OPTIONS = toOptions(LOCATIONS);
 
-const AGREEMENT: ChoiceOption<number>[] = LIKERT_AGREEMENT_OPTIONS.map((o) => ({
-  value: o.value,
-  label: o.fullLabel,
-}));
+// Options are numbered from 1 in the order the design doc lists them
+const numbered = (q: Question): ChoiceOption<number>[] =>
+  q.options.map((label, i) => ({ value: i + 1, label }));
 
-const FREQUENCY: ChoiceOption<number>[] = LIKERT_FREQUENCY_OPTIONS.map((o) => ({
-  value: o.value,
-  label: o.fullLabel,
-  hint: o.description,
-}));
+const OPTIONS_BY_ID: Record<string, ChoiceOption<number>[]> = Object.fromEntries(
+  [...TASK_QUESTIONS, ...SUGAR_QUESTIONS].map((q) => [q.id, numbered(q)])
+);
 
 const isAnswered = (s: QuestionnaireState, qid: string): boolean => {
   switch (qid) {
     case "angkatan":
       return !!s.demographics.angkatan;
-    case "semester":
-      return !!s.demographics.semester;
-    case "gender":
-      return !!s.demographics.gender;
-    case "location":
-      return !!s.demographics.studyLocation;
-    case "age":
-      return !!(s.demographics.age || "").trim();
+    case "initials":
+      return !!s.demographics.initials.trim();
     default:
-      return (
-        s.variableXAnswers[qid] != null ||
-        s.sweetCategoryFrequency[qid] != null ||
-        s.variableYAnswers[qid] != null
-      );
+      return s.answers[qid] != null;
   }
 };
 
@@ -263,7 +236,6 @@ export function App() {
   const [receipt, setReceipt] = useState<{
     submissionId: string;
     timestamp: string;
-    summary: ComputedSummary;
   } | null>(null);
 
   const surveyRef = useRef<HTMLElement>(null);
@@ -355,11 +327,7 @@ export function App() {
 
   // Overall progress (0..1) fills the cup above the sheet
   const { riseProgress, answeredCount, totalCount } = useMemo(() => {
-    const totalPoints =
-      4 + // angkatan, semester, age, gender
-      VARIABLE_X_ITEMS.length +
-      SWEET_CATEGORIES.length +
-      VARIABLE_Y_ITEMS.length;
+    const totalPoints = 2 + QUESTION_COUNT; // initials, angkatan
 
     if (activeTab === "done") {
       return {
@@ -370,14 +338,9 @@ export function App() {
     }
 
     let filled = 0;
+    if (state.demographics.initials.trim()) filled += 1;
     if (state.demographics.angkatan) filled += 1;
-    if (state.demographics.semester) filled += 1;
-    if (state.demographics.age) filled += 1;
-    if (state.demographics.gender) filled += 1;
-
-    filled += Object.keys(state.variableXAnswers).length;
-    filled += Object.keys(state.sweetCategoryFrequency).length;
-    filled += Object.keys(state.variableYAnswers).length;
+    filled += Object.keys(state.answers).length;
 
     return {
       riseProgress: Math.min(1, filled / totalPoints),
@@ -461,36 +424,10 @@ export function App() {
     answer(qid, setDemo({ angkatan: v }));
   }, [answer]);
 
-  const handlePickSemester = useCallback((qid: string, v: string) => {
-    answer(qid, setDemo({ semester: v }));
-  }, [answer]);
-
-  const handlePickGender = useCallback((qid: string, v: string) => {
-    answer(qid, setDemo({ gender: v }));
-  }, [answer]);
-
-  const handlePickLocation = useCallback((qid: string, v: string) => {
-    answer(qid, setDemo({ studyLocation: v, residence: "Yogyakarta" }));
-  }, [answer]);
-
-  const handlePickWorkload = useCallback((qid: string, v: number) => {
+  const handlePickAnswer = useCallback((qid: string, v: number) => {
     answer(qid, (prev) => ({
       ...prev,
-      variableXAnswers: { ...prev.variableXAnswers, [qid]: v },
-    }));
-  }, [answer]);
-
-  const handlePickSweet = useCallback((qid: string, v: number) => {
-    answer(qid, (prev) => ({
-      ...prev,
-      sweetCategoryFrequency: { ...prev.sweetCategoryFrequency, [qid]: v },
-    }));
-  }, [answer]);
-
-  const handlePickSugarY = useCallback((qid: string, v: number) => {
-    answer(qid, (prev) => ({
-      ...prev,
-      variableYAnswers: { ...prev.variableYAnswers, [qid]: v },
+      answers: { ...prev.answers, [qid]: v },
     }));
   }, [answer]);
 
@@ -613,43 +550,20 @@ export function App() {
     triggerCupNudge();
     setErrorMsg("");
     setMissing(new Set());
-    const vx: Record<string, number> = {};
-    VARIABLE_X_ITEMS.forEach((item, i) => {
-      vx[item.id] = [4, 3, 2, 4, 3, 2, 4, 3][i % 8];
-    });
-    const freq: Record<string, number> = {};
-    SWEET_CATEGORIES.forEach((cat, i) => {
-      freq[cat.id] = [4, 3, 2, 3, 3][i % 5];
-    });
-    const vy: Record<string, number> = {};
-    VARIABLE_Y_ITEMS.forEach((item, i) => {
-      vy[item.id] = [4, 4, 2, 4, 3, 4, 2, 3][i % 8];
+    const answers: Record<string, number> = {};
+    [...TASK_IDS, ...SUGAR_IDS].forEach((id, i) => {
+      answers[id] = [4, 3, 3, 2, 4, 2, 3, 2, 3, 3, 4][i % 11];
     });
 
+    // Initials TEST so `npm run sheet:hapus-test` can clear these rows later
     setState({
       hasConsented: true,
       consentTimestamp: new Date().toISOString(),
       demographics: {
-        initials: "N. Putri",
-        angkatan: "2023",
-        semester: "Semester 6",
-        age: "20",
-        gender: "Perempuan",
-        residence: "Kos / Kontrakan Sendiri",
-        isActiveStudent: true,
-        studyLocation: "Kafe / coffee shop",
-        ewalletType: "GoPay",
-        ewalletNumber: "081234567890",
+        initials: "TEST",
+        angkatan: "2025",
       },
-      quantitativeTasks: {
-        weekly_assignments_count: 7,
-        daily_study_hours: 5,
-        late_night_sessions: 4,
-      },
-      variableXAnswers: vx,
-      sweetCategoryFrequency: freq,
-      variableYAnswers: vy,
-      openNote: "Es kopi susu gula aren waktu lembur praktikum.",
+      answers,
     });
   };
 
@@ -662,7 +576,6 @@ export function App() {
       setReceipt({
         submissionId: res.submissionId,
         timestamp: res.timestamp,
-        summary: res.summary,
       });
       soundEngine.playWarmInviteChord();
       setIsSentFlare(true);
@@ -708,16 +621,16 @@ export function App() {
 
   const sidebarCopy = {
     profile: {
-      title: "Mulai dari meja belajarmu.",
-      lede: "Beberapa data singkat sebelum kita menakar beban tugas dan asupan manismu.",
+      title: "Mulai dari identitas singkat.",
+      lede: "Cukup inisial dan angkatan sebelum masuk ke pertanyaan.",
     },
     workload: {
-      title: "Seberapa padat minggu ini?",
-      lede: "Hitungan tugas kuliah, laporan praktikum, dan jam belajar di luar kelas.",
+      title: "Seberapa padat tugasmu?",
+      lede: "Tiga pertanyaan tentang jumlah tugas akademik dan lama mengerjakannya.",
     },
     sugar: {
       title: "Saatnya menakar yang manis.",
-      lede: "Kopi susu gula aren, boba, atau camilan yang menemani saat tenggat mendekat.",
+      lede: "Delapan pertanyaan tentang makanan dan minuman tinggi gula dalam seminggu.",
     },
     done: {
       title: "Struk takaranmu siap.",
@@ -936,99 +849,41 @@ export function App() {
                       <div>
                         {stepKicker("profile", 1)}
                         <p className="note-phrase">
-                          Sedikit tentang dirimu sebagai mahasiswa S1 Psikologi UGM.
+                          Identitas singkat sebagai mahasiswa S1 Psikologi UGM.
                         </p>
+                      </div>
+
+                      <div className="note-fields">
+                        <div
+                          className={`field field-wide ${missing.has("initials") ? "is-missing" : ""}`}
+                          data-qid="initials"
+                        >
+                          <label htmlFor="fInitials">
+                            Nama (inisial)
+                            {missing.has("initials") && <em className="q-missing">Belum diisi</em>}
+                          </label>
+                          <input
+                            id="fInitials"
+                            type="text"
+                            autoComplete="off"
+                            maxLength={12}
+                            placeholder="Misal: NP"
+                            aria-invalid={missing.has("initials")}
+                            value={state.demographics.initials}
+                            onChange={(e) => updateField({ initials: e.target.value }, "initials")}
+                          />
+                        </div>
                       </div>
 
                       <div className="q-list">
                         <ChoiceRow
                           qid="angkatan"
                           label="Angkatan"
-                          text="Tahun masuk S1 Psikologi UGM"
                           options={ANGKATAN_OPTIONS}
                           value={state.demographics.angkatan}
                           isMissing={missing.has("angkatan")}
                           onPick={handlePickAngkatan}
                         />
-
-                        <ChoiceRow
-                          qid="semester"
-                          label="Semester"
-                          text="Semester yang sedang ditempuh"
-                          options={SEMESTERS_OPTIONS}
-                          value={state.demographics.semester}
-                          isMissing={missing.has("semester")}
-                          onPick={handlePickSemester}
-                        />
-
-                        <ChoiceRow
-                          qid="gender"
-                          label="Jenis kelamin"
-                          options={GENDERS_OPTIONS}
-                          value={state.demographics.gender}
-                          isMissing={missing.has("gender")}
-                          onPick={handlePickGender}
-                        />
-
-                        <ChoiceRow
-                          qid="location"
-                          label="Tempat nugas utama (opsional)"
-                          text="Lokasi paling sering saat mengerjakan tugas"
-                          options={LOCATIONS_OPTIONS}
-                          value={state.demographics.studyLocation}
-                          isMissing={false}
-                          onPick={handlePickLocation}
-                        />
-                      </div>
-
-                      <div className="note-fields">
-                        <div
-                          className={`field ${missing.has("age") ? "is-missing" : ""}`}
-                          data-qid="age"
-                        >
-                          <label htmlFor="fAge">
-                            Usia (tahun)
-                            {missing.has("age") && <em className="q-missing">Belum diisi</em>}
-                          </label>
-                          <input
-                            id="fAge"
-                            type="number"
-                            inputMode="numeric"
-                            min={16}
-                            max={35}
-                            placeholder="20"
-                            aria-invalid={missing.has("age")}
-                            value={state.demographics.age}
-                            onChange={(e) => updateField({ age: e.target.value }, "age")}
-                          />
-                        </div>
-
-                        <div className="field">
-                          <label htmlFor="fInitials">Nama panggilan / inisial (opsional)</label>
-                          <input
-                            id="fInitials"
-                            type="text"
-                            autoComplete="nickname"
-                            placeholder="Misal: N. Putri"
-                            value={state.demographics.initials}
-                            onChange={(e) => updateField({ initials: e.target.value })}
-                          />
-                        </div>
-
-                        <div className="field field-wide">
-                          <label htmlFor="fWallet">
-                            Nomor GoPay / ShopeePay untuk undian (opsional)
-                          </label>
-                          <input
-                            id="fWallet"
-                            type="tel"
-                            inputMode="tel"
-                            autoComplete="tel"
-                            placeholder="0812xxxxxxxx (boleh dikosongkan)"
-                            value={state.demographics.ewalletNumber}
-                            onChange={(e) => updateField({ ewalletNumber: e.target.value })}
-                          />
-                        </div>
                       </div>
 
                       {errorMsg && (
@@ -1051,7 +906,7 @@ export function App() {
                           onClick={() => checkStep("profile") && goToStep("workload")}
                         >
                           <i className="note-btn-cube" aria-hidden="true" />
-                          <span>Lanjut ke tugas kuliah</span>
+                          <span>Lanjut ke tugas akademik</span>
                         </button>
                       </div>
                     </>
@@ -1063,74 +918,24 @@ export function App() {
                       <div>
                         {stepKicker("workload", 2)}
                         <p className="note-phrase">
-                          Beban tugas kuliah yang kamu rasakan selama sebulan terakhir.
+                          Jumlah tugas akademik dan waktu yang kamu butuhkan untuk menyelesaikannya.
                         </p>
                       </div>
 
-                      <div className="q-group">
-                        <p className="q-group-title">Perkiraan angka</p>
-                        <div className="lab-stack">
-                          {QUANTITATIVE_TASK_METRICS.map((m) => {
-                            const val = state.quantitativeTasks[m.id] ?? m.defaultValue;
-                            return (
-                              <div className="lab-block" key={m.id}>
-                                <div className="lab-row">
-                                  <label className="lab-title" htmlFor={`range-${m.id}`}>
-                                    {m.label}
-                                  </label>
-                                  <span className="lab-val">
-                                    {val} <small>{m.unit}</small>
-                                  </span>
-                                </div>
-                                <input
-                                  id={`range-${m.id}`}
-                                  type="range"
-                                  className="lab-range"
-                                  min={m.min}
-                                  max={m.max}
-                                  step={m.step}
-                                  value={val}
-                                  aria-valuetext={`${val} ${m.unit}`}
-                                  onChange={(e) => {
-                                    triggerCupNudge();
-                                    setState((prev) => ({
-                                      ...prev,
-                                      quantitativeTasks: {
-                                        ...prev.quantitativeTasks,
-                                        [m.id]: Number(e.target.value),
-                                      },
-                                    }));
-                                  }}
-                                />
-                                <div className="lab-scale" aria-hidden="true">
-                                  <span>{m.min}</span>
-                                  <span>{m.max}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="q-group">
-                        <p className="q-group-title">
-                          Seberapa sesuai pernyataan berikut dengan kondisimu?
-                        </p>
-                        <div className="q-list">
-                          {VARIABLE_X_ITEMS.map((item, idx) => (
-                            <ChoiceRow
-                              key={item.id}
-                              qid={item.id}
-                              label={`Pernyataan ${idx + 1} dari ${VARIABLE_X_ITEMS.length}`}
-                              text={item.text}
-                              options={AGREEMENT}
-                              value={state.variableXAnswers[item.id]}
-                              isMissing={missing.has(item.id)}
-                              variant="chips-likert-agreement"
-                              onPick={handlePickWorkload}
-                            />
-                          ))}
-                        </div>
+                      <div className="q-list">
+                        {TASK_QUESTIONS.map((q, idx) => (
+                          <ChoiceRow
+                            key={q.id}
+                            qid={q.id}
+                            label={`Pertanyaan ${idx + 1} dari ${QUESTION_COUNT}`}
+                            text={q.text}
+                            options={OPTIONS_BY_ID[q.id]}
+                            value={state.answers[q.id]}
+                            isMissing={missing.has(q.id)}
+                            variant="chips-scale"
+                            onPick={handlePickAnswer}
+                          />
+                        ))}
                       </div>
 
                       {errorMsg && (
@@ -1149,7 +954,7 @@ export function App() {
                           onClick={() => checkStep("workload") && goToStep("sugar")}
                         >
                           <i className="note-btn-cube" aria-hidden="true" />
-                          <span>Lanjut ke asupan manis</span>
+                          <span>Lanjut ke konsumsi gula</span>
                         </button>
                       </div>
                     </>
@@ -1161,66 +966,24 @@ export function App() {
                       <div>
                         {stepKicker("sugar", 3)}
                         <p className="note-phrase">
-                          Seberapa sering yang manis-manis menemani jam belajarmu?
+                          Makanan dan minuman tinggi gula yang kamu konsumsi dalam satu minggu.
                         </p>
                       </div>
 
-                      <div className="q-group">
-                        <p className="q-group-title">
-                          Dalam sebulan terakhir, seberapa sering kamu mengonsumsi ini?
-                        </p>
-                        <div className="q-list">
-                          {SWEET_CATEGORIES.map((cat, idx) => (
-                            <ChoiceRow
-                              key={cat.id}
-                              qid={cat.id}
-                              label={`Jenis ${idx + 1} dari ${SWEET_CATEGORIES.length}`}
-                              text={cat.name}
-                              hint={`${cat.examples}. Sekitar ${cat.sugarEstimate}.`}
-                              options={FREQUENCY}
-                              value={state.sweetCategoryFrequency[cat.id]}
-                              isMissing={missing.has(cat.id)}
-                              variant="chips-likert-frequency"
-                              onPick={handlePickSweet}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="q-group">
-                        <p className="q-group-title">
-                          Seberapa sesuai pernyataan berikut dengan dirimu?
-                        </p>
-                        <div className="q-list">
-                          {VARIABLE_Y_ITEMS.map((item, idx) => (
-                            <ChoiceRow
-                              key={item.id}
-                              qid={item.id}
-                              label={`Pernyataan ${idx + 1} dari ${VARIABLE_Y_ITEMS.length}`}
-                              text={item.text}
-                              options={AGREEMENT}
-                              value={state.variableYAnswers[item.id]}
-                              isMissing={missing.has(item.id)}
-                              variant="chips-likert-agreement"
-                              onPick={handlePickSugarY}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="field field-wide">
-                        <label htmlFor="fNote">
-                          Minuman atau camilan manis andalan saat nugas (opsional)
-                        </label>
-                        <input
-                          id="fNote"
-                          type="text"
-                          placeholder="Misal: Es kopi susu gula aren less sugar waktu lembur"
-                          value={state.openNote}
-                          onChange={(e) =>
-                            setState((prev) => ({ ...prev, openNote: e.target.value }))
-                          }
-                        />
+                      <div className="q-list">
+                        {SUGAR_QUESTIONS.map((q, idx) => (
+                          <ChoiceRow
+                            key={q.id}
+                            qid={q.id}
+                            label={`Pertanyaan ${idx + TASK_QUESTIONS.length + 1} dari ${QUESTION_COUNT}`}
+                            text={q.text}
+                            options={OPTIONS_BY_ID[q.id]}
+                            value={state.answers[q.id]}
+                            isMissing={missing.has(q.id)}
+                            variant="chips-scale"
+                            onPick={handlePickAnswer}
+                          />
+                        ))}
                       </div>
 
                       {errorMsg && (
@@ -1255,34 +1018,9 @@ export function App() {
                           <span>Psikologi UGM</span>
                         </div>
                         <p className="note-phrase">
-                          Terima kasih, jawabanmu terkirim. Ini ringkasan beban tugas
-                          dan takaran manismu.
+                          Terima kasih, jawabanmu sudah terkirim untuk penelitian Kelompok 9
+                          Metode Penelitian Kuantitatif.
                         </p>
-                      </div>
-
-                      <div className="detail-numbers">
-                        <div>
-                          <p className="number-value">
-                            {receipt.summary.variableXPercentage}%
-                          </p>
-                          <p className="number-label">
-                            Indeks beban tugas ({receipt.summary.variableXCategory})
-                          </p>
-                        </div>
-                        <div>
-                          <p className="number-value">
-                            {receipt.summary.variableYPercentage}%
-                          </p>
-                          <p className="number-label">
-                            Indeks asupan manis ({receipt.summary.variableYCategory})
-                          </p>
-                        </div>
-                        <div>
-                          <p className="number-value">
-                            {state.quantitativeTasks.weekly_assignments_count ?? 5}
-                          </p>
-                          <p className="number-label">Rata-rata tugas per minggu</p>
-                        </div>
                       </div>
 
                       <div className="receipt-box">
@@ -1291,25 +1029,16 @@ export function App() {
                           <strong>{receipt.submissionId}</strong>
                         </div>
                         <div className="receipt-row">
-                          <span>TEMPAT NUGAS FAVORIT</span>
-                          <strong>{state.demographics.studyLocation || "Kampus / Kos"}</strong>
+                          <span>ANGKATAN</span>
+                          <strong>{state.demographics.angkatan || "-"}</strong>
                         </div>
                         <div className="receipt-row">
-                          <span>ASUPAN MANIS UTAMA</span>
-                          <strong>{receipt.summary.topSweetCraving}</strong>
-                        </div>
-                        <div className="receipt-row">
-                          <span>DURASI NUGAS HARIAN</span>
-                          <strong>{state.quantitativeTasks.daily_study_hours ?? 4} Jam / Hari</strong>
+                          <span>PERTANYAAN TERJAWAB</span>
+                          <strong>
+                            {QUESTION_COUNT} dari {QUESTION_COUNT}
+                          </strong>
                         </div>
                       </div>
-
-                      <p className="about-text">
-                        Saat beban kognitif meningkat akibat tenggat tugas, otak
-                        membutuhkan asupan energi cepat dan pelepasan dopamin
-                        singkat—itulah mengapa minuman dan camilan manis terasa
-                        begitu menggoda di tengah lembur.
-                      </p>
 
                       <div className="note-send">
                         <div className="note-send-group">
