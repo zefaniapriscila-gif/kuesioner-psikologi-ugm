@@ -58,9 +58,8 @@ const STEP_NAMES: Record<StepTab, string> = {
 const TASK_IDS = TASK_QUESTIONS.map((q) => q.id);
 const SUGAR_IDS = SUGAR_QUESTIONS.map((q) => q.id);
 
-// Required answers per step, in on-screen order. Consent is given on its own
-// page, which stays one step behind step 1.
-const REQUIRED: Record<StepTab, string[]> = {
+// Questions per step, used to show progress and resume at the next unanswered item.
+const STEP_QUESTION_IDS: Record<StepTab, string[]> = {
   profile: ["initials", "angkatan"],
   workload: TASK_IDS,
   sugar: SUGAR_IDS,
@@ -113,6 +112,16 @@ const setDemo =
   });
 
 const scrollBehavior = (): ScrollBehavior => (prefersReducedMotion() ? "auto" : "smooth");
+
+const getStoredTheme = (): boolean => {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "night" || saved === "day") return saved === "night";
+  } catch {
+    // ignore
+  }
+  return document.documentElement.dataset.theme === "night";
+};
 
 // Researcher tools (sample fill, data panel) stay out of respondents' way.
 // Open the site with ?peneliti to show them.
@@ -220,9 +229,7 @@ export function App() {
     }
     return "profile";
   });
-  const [isNightMode, setIsNightMode] = useState<boolean>(
-    () => document.documentElement.dataset.theme === "night"
-  );
+  const [isNightMode, setIsNightMode] = useState<boolean>(() => getStoredTheme());
   const [isSoundOn, setIsSoundOn] = useState<boolean>(() => !soundEngine.isMuted);
   const [isTucked, setIsTucked] = useState<boolean>(false);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
@@ -353,8 +360,8 @@ export function App() {
     const stats = {} as Record<StepTab, { done: number; total: number }>;
     STEPS.forEach((tab) => {
       stats[tab] = {
-        done: REQUIRED[tab].filter((id) => isAnswered(state, id)).length,
-        total: REQUIRED[tab].length,
+        done: STEP_QUESTION_IDS[tab].filter((id) => isAnswered(state, id)).length,
+        total: STEP_QUESTION_IDS[tab].length,
       };
     });
     return stats;
@@ -444,22 +451,10 @@ export function App() {
     requestAnimationFrame(scrollToNote);
   };
 
-  // Marks every unanswered required question and takes the respondent to the first one
-  const checkStep = (tab: StepTab): boolean => {
-    const open = REQUIRED[tab].filter((id) => !isAnswered(state, id));
-    if (open.length === 0) return true;
-    setMissing(new Set(open));
-    setErrorMsg(
-      `Masih ada ${open.length} pertanyaan yang belum dijawab. Yang bertanda merah perlu diisi.`
-    );
-    requestAnimationFrame(() => scrollToQuestion(open[0], true));
-    return false;
-  };
-
   // Take a returning respondent straight to their first open question
   const scrollToResumePoint = () => {
     if (activeTab !== "done" && answeredCount > 0) {
-      const next = REQUIRED[activeTab].find((id) => !isAnswered(state, id));
+      const next = STEP_QUESTION_IDS[activeTab].find((id) => !isAnswered(state, id));
       if (next) scrollToQuestion(next);
       else scrollToNote();
       return;
@@ -568,7 +563,6 @@ export function App() {
   };
 
   const handleSubmitAll = async () => {
-    if (!checkStep("sugar")) return;
     setErrorMsg("");
     setIsSubmitting(true);
     try {
@@ -779,6 +773,9 @@ export function App() {
                   <i className="cube-dot" aria-hidden="true" />
                   <span>Tersimpan otomatis di browser</span>
                 </p>
+                <p className="survey-lede survey-optional-note">
+                  Semua pertanyaan opsional. Anda dapat melewati pertanyaan dan tetap melanjutkan.
+                </p>
 
                 <h1 className="survey-title" id="surveyHeading">
                   {sidebarCopy.title}
@@ -903,7 +900,7 @@ export function App() {
                         <button
                           type="button"
                           className="note-btn"
-                          onClick={() => checkStep("profile") && goToStep("workload")}
+                          onClick={() => goToStep("workload")}
                         >
                           <i className="note-btn-cube" aria-hidden="true" />
                           <span>Lanjut ke tugas akademik</span>
@@ -951,7 +948,7 @@ export function App() {
                         <button
                           type="button"
                           className="note-btn"
-                          onClick={() => checkStep("workload") && goToStep("sugar")}
+                          onClick={() => goToStep("sugar")}
                         >
                           <i className="note-btn-cube" aria-hidden="true" />
                           <span>Lanjut ke konsumsi gula</span>
@@ -1035,7 +1032,7 @@ export function App() {
                         <div className="receipt-row">
                           <span>PERTANYAAN TERJAWAB</span>
                           <strong>
-                            {QUESTION_COUNT} dari {QUESTION_COUNT}
+                            {Object.keys(state.answers).length} dari {QUESTION_COUNT}
                           </strong>
                         </div>
                       </div>

@@ -118,7 +118,7 @@ export const PenjelasanPenelitian: React.FC<PenjelasanPenelitianProps> = ({
             </span>
             Perkenalan
           </h2>
-          <p>
+          <p className="bab-intro">
             Perkenalkan, kami dari kelompok 9 yang beranggotakan Zef, Kenzie, Ilmi, Zizi, Aul,
             dan Shaufi dari mata kuliah Metode Penelitian Kuantitatif kelas D. Kami merupakan
             mahasiswa Psikologi UGM angkatan 2025 yang saat ini sedang melakukan survei dengan
@@ -135,7 +135,7 @@ export const PenjelasanPenelitian: React.FC<PenjelasanPenelitianProps> = ({
             Tujuan
           </h2>
           <p className="bab-lead">
-            Survei ini dilakukan untuk menganalisa{" "}
+            Survei ini dilakukan untuk mengkaji{" "}
             <mark ref={markRef} className="stabilo">
               kecenderungan konsumsi tinggi gula
             </mark>{" "}
