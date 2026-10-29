@@ -85,7 +85,7 @@ export const PenjelasanPenelitian: React.FC<PenjelasanPenelitianProps> = ({
           <em className="is-tea">Konsumsi Tinggi Gula</em> pada Mahasiswa S1 Psikologi UGM
         </h1>
         <p className="paper-meta">
-          Kelompok 9 Metode Penelitian Kuantitatif D, Fakultas Psikologi Universitas Gadjah Mada
+          Kelompok 9 Metode Penelitian Kuantitatif D
         </p>
       </header>
 
