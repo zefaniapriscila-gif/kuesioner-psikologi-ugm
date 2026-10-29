@@ -1,4 +1,5 @@
 import { ALL_QUESTIONS } from "../data/questionnaireData";
+import { saveMyPoint } from "./resultsFeed";
 
 export interface DemographicsData {
   initials: string;
@@ -52,6 +53,9 @@ export async function submitToGoogleSheets(
     angkatan: state.demographics.angkatan,
     ...answers,
   };
+
+  // Lets the results page mark this respondent's own point
+  saveMyPoint(state.answers);
 
   // Save in local submission log for researcher inspection
   try {
@@ -137,6 +141,23 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// Halaman Hasil membaca dari sini: hanya kolom Q1..Q11, tanpa inisial atau ID
+function doGet() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  if (sheet.getLastRow() < 2) return reply({ status: "ok", rows: [] });
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0];
+  var cols = [];
+  for (var q = 1; q <= 11; q++) cols.push(headers.indexOf("Q" + q));
+  var initialsCol = headers.indexOf("initials");
+  var rows = [];
+  for (var i = 1; i < values.length; i++) {
+    if (initialsCol !== -1 && values[i][initialsCol] === "TEST") continue;
+    rows.push(cols.map(function(c) { return c === -1 ? "" : values[i][c]; }));
+  }
+  return reply({ status: "ok", rows: rows });
 }
 
 function handleAdmin(sheet, data) {

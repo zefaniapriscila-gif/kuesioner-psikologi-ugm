@@ -1404,6 +1404,8 @@ ul, ol {
    ========================================================================== */
 
 .hasil {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: center;
@@ -1461,10 +1463,231 @@ ul, ol {
 }
 
 .hasil-chart {
+  position: relative;
   padding: clamp(14px, 2vw, 26px);
   border-radius: 6px;
   background: var(--surface);
-  box-shadow: 0 1px 2px var(--contact), 0 18px 40px var(--cast-page);
+  box-shadow: 0 1px 2px var(--contact), var(--sun-shadow);
+}
+
+.hasil-caption {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.hasil-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.live-dot {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tea);
+}
+
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--tea);
+  animation: live-ping 2.4s ease-out infinite;
+}
+
+.live-dot.is-off,
+.live-dot.is-off::after {
+  background: var(--ink-3);
+  animation: none;
+}
+
+@keyframes live-ping {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+.hasil-stats {
+  display: flex;
+  gap: clamp(28px, 4vw, 52px);
+  margin-top: 28px;
+}
+
+.hasil-stats dt {
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.hasil-stats dd {
+  margin: 4px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(40px, 4.4vw, 60px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.plot-tick {
+  fill: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.plot-tick-y {
+  text-anchor: end;
+}
+
+/* The trend line is drawn on with the pen, end to end */
+.plot-trend {
+  stroke: var(--pen);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: pen-draw 1.4s 0.5s cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+
+@keyframes pen-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Sugar cubes: sunlit top, window-side face half lit, far face in shade */
+.cube-top {
+  fill: #ffffff;
+}
+
+.cube-left {
+  fill: #e6e8f0;
+}
+
+.cube-right {
+  fill: #c3c8da;
+}
+
+.cube-edge {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 0.7;
+  stroke-linejoin: round;
+}
+
+.cube-shadow {
+  fill: var(--cast-page);
+  opacity: 0.9;
+}
+
+[data-theme="night"] .cube-top {
+  fill: #fff4e2;
+}
+
+[data-theme="night"] .cube-left {
+  fill: #d9c9b0;
+}
+
+[data-theme="night"] .cube-right {
+  fill: #8c8172;
+}
+
+[data-theme="night"] .cube-edge {
+  stroke: rgba(12, 17, 48, 0.7);
+}
+
+.cube-pt .cube-body {
+  transition: transform 0.2s ease;
+}
+
+.cube-pt:hover .cube-body {
+  transform: scale(1.5);
+}
+
+/* New arrivals fall onto the paper: the cube drops, its shadow tightens */
+.cube-pt.is-new .cube-body {
+  animation: cube-drop 0.62s cubic-bezier(0.3, 0, 0.5, 1) both;
+  animation-delay: inherit;
+}
+
+.cube-pt.is-new .cube-shadow {
+  animation: cube-shadow-land 0.62s cubic-bezier(0.3, 0, 0.5, 1) both;
+  animation-delay: inherit;
+}
+
+.cube-pt.is-new {
+  animation: none;
+}
+
+@keyframes cube-drop {
+  0% {
+    transform: translateY(-46px);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  78% {
+    transform: translateY(0);
+  }
+  88% {
+    transform: translateY(-4px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes cube-shadow-land {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  78% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
+.plot-mine circle {
+  fill: none;
+  stroke: var(--tea);
+  stroke-width: 1.8;
+  stroke-dasharray: 3 3;
+}
+
+.plot-mine text {
+  fill: var(--tea);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plot-trend {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .cube-pt.is-new .cube-body,
+  .cube-pt.is-new .cube-shadow,
+  .live-dot::after {
+    animation: none;
+  }
 }
 
 .hasil-chart svg {
