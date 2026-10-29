@@ -1209,7 +1209,7 @@ export function App() {
 
                       <div className="q-group">
                         <p className="q-group-title">
-                          Dalam sebulan terakhir, seberapa sering kamu mengonsumsi ini?
+                          Dalam seminggu terakhir, bagaimana perilaku konsumsi makanan dan/atau minuman tinggi gula kamu?
                         </p>
                         <div className="q-list">
                           {SWEET_CATEGORIES.map((cat, idx) => (
