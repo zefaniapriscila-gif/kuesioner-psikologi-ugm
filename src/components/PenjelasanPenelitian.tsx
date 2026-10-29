@@ -118,7 +118,7 @@ export const PenjelasanPenelitian: React.FC<PenjelasanPenelitianProps> = ({
             </span>
             Perkenalan
           </h2>
-          <p>
+          <p className="bab-intro">
             Perkenalkan, kami dari kelompok 9 yang beranggotakan Zef, Kenzie, Ilmi, Zizi, Aul,
             dan Shaufi dari mata kuliah Metode Penelitian Kuantitatif kelas D. Kami merupakan
             mahasiswa Psikologi UGM angkatan 2025 yang saat ini sedang melakukan survei dengan

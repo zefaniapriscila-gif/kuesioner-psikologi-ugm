@@ -1670,6 +1670,10 @@ ul, ol {
   color: var(--pen);
 }
 
+.bab-intro {
+  text-align: justify;
+}
+
 /* The number hangs in the margin, just right of the red line */
 .bab-num {
   flex: none;
