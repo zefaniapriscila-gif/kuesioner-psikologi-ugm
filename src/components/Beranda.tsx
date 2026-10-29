@@ -503,8 +503,8 @@ export const Beranda: React.FC<BerandaProps> = ({
           </h1>
 
           <p className="beranda-lede">
-            Kami ingin tahu apakah banyaknya tugas kuliah berkaitan dengan seberapa
-            sering kamu makan dan minum yang manis.
+            Kami ingin mengkaji bagaimana kecenderungan perilaku konsumsi tinggi gula saat
+            menghadapi tuntutan akademik pada Mahasiswa S1 Psikologi Universitas Gadjah Mada
           </p>
         </div>
 
