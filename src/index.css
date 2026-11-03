@@ -2894,6 +2894,30 @@ button.text-link {
   grid-column: 1 / -1;
 }
 
+.reward-wallet-card {
+  --focus: #a65d28;
+  padding: 18px 20px;
+  border: 1px solid rgba(76, 57, 34, 0.14);
+  border-radius: 16px;
+  background: #f4ead5;
+  color: #2b2636;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.reward-wallet-card label {
+  color: #65563e;
+}
+
+.reward-wallet-card input {
+  border-bottom-color: rgba(76, 57, 34, 0.28);
+  color: #2b2636;
+}
+
+.reward-wallet-card input::placeholder,
+.reward-wallet-card small {
+  color: #75684f;
+}
+
 .field label {
   font-size: 13.5px;
   font-weight: 650;

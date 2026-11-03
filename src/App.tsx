@@ -893,7 +893,7 @@ export function App() {
                       </div>
 
                       <div className="note-fields">
-                        <div className="field field-wide">
+                        <div className="field field-wide reward-wallet-card">
                           <label htmlFor="fRewardWallet">
                             Nomor GoPay atau ShopeePay untuk hadiah (opsional)
                           </label>
