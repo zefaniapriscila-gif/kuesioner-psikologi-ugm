@@ -2918,6 +2918,28 @@ button.text-link {
   color: #75684f;
 }
 
+[data-theme="night"] .reward-wallet-card {
+  --focus: #a3adff;
+  border-color: rgba(180, 193, 255, 0.18);
+  background: #202b5a;
+  color: #edf0ff;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
+}
+
+[data-theme="night"] .reward-wallet-card label {
+  color: #d3daf7;
+}
+
+[data-theme="night"] .reward-wallet-card input {
+  border-bottom-color: rgba(211, 218, 247, 0.26);
+  color: #edf0ff;
+}
+
+[data-theme="night"] .reward-wallet-card input::placeholder,
+[data-theme="night"] .reward-wallet-card small {
+  color: #b4bedf;
+}
+
 .field label {
   font-size: 13.5px;
   font-weight: 650;
