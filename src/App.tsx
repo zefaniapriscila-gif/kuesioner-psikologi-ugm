@@ -212,7 +212,15 @@ export function App() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return { ...INITIAL_QUESTIONNAIRE_STATE, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved) as Partial<QuestionnaireState>;
+        return {
+          ...INITIAL_QUESTIONNAIRE_STATE,
+          ...parsed,
+          demographics: {
+            ...INITIAL_QUESTIONNAIRE_STATE.demographics,
+            ...(parsed.demographics ?? {}),
+          },
+        };
       }
     } catch {
       // ignore
@@ -557,6 +565,7 @@ export function App() {
       demographics: {
         initials: "TEST",
         angkatan: "2025",
+        rewardWalletNumber: "",
       },
       answers,
     });
@@ -881,6 +890,26 @@ export function App() {
                           isMissing={missing.has("angkatan")}
                           onPick={handlePickAngkatan}
                         />
+                      </div>
+
+                      <div className="note-fields">
+                        <div className="field field-wide">
+                          <label htmlFor="fRewardWallet">
+                            Nomor GoPay atau ShopeePay untuk hadiah (opsional)
+                          </label>
+                          <input
+                            id="fRewardWallet"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="Masukkan nomor GoPay atau ShopeePay"
+                            value={state.demographics.rewardWalletNumber}
+                            onChange={(e) =>
+                              updateField({ rewardWalletNumber: e.target.value })
+                            }
+                          />
+                          <small>Isi hanya jika ingin diikutsertakan dalam pemberian hadiah.</small>
+                        </div>
                       </div>
 
                       {errorMsg && (

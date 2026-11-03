@@ -4,6 +4,7 @@ import { saveMyPoint } from "./resultsFeed";
 export interface DemographicsData {
   initials: string;
   angkatan: string;
+  rewardWalletNumber: string;
 }
 
 export interface QuestionnaireState {
@@ -20,6 +21,7 @@ export const INITIAL_QUESTIONNAIRE_STATE: QuestionnaireState = {
   demographics: {
     initials: "",
     angkatan: "",
+    rewardWalletNumber: "",
   },
   answers: {},
 };
@@ -51,6 +53,7 @@ export async function submitToGoogleSheets(
     consentTimestamp: state.consentTimestamp ?? "",
     initials: state.demographics.initials.trim() || "Anonim",
     angkatan: state.demographics.angkatan,
+    rewardWalletNumber: state.demographics.rewardWalletNumber.trim(),
     ...answers,
   };
 
