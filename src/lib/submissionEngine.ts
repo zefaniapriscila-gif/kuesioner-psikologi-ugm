@@ -8,6 +8,7 @@ export interface DemographicsData {
 }
 
 export interface QuestionnaireState {
+  participationCode: string;
   hasConsented: boolean;
   consentTimestamp: string | null;
   demographics: DemographicsData;
@@ -16,6 +17,7 @@ export interface QuestionnaireState {
 }
 
 export const INITIAL_QUESTIONNAIRE_STATE: QuestionnaireState = {
+  participationCode: "",
   hasConsented: false,
   consentTimestamp: null,
   demographics: {
@@ -50,6 +52,7 @@ export async function submitToGoogleSheets(
   const payload = {
     submissionId,
     timestamp,
+    participationCode: state.participationCode.trim(),
     consentTimestamp: state.consentTimestamp ?? "",
     initials: state.demographics.initials.trim() || "Anonim",
     angkatan: state.demographics.angkatan,

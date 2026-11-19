@@ -2,6 +2,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 import { Beranda } from "./components/Beranda";
 
 import { CubeMark } from "./components/CubeMark";
+import { KodePartisipasi } from "./components/KodePartisipasi";
 import { Persetujuan } from "./components/Persetujuan";
 import { soundEngine } from "./lib/soundEngine";
 import { Check, Moon, SpeakerHigh, SpeakerSlash, Sun } from "./components/Icons";
@@ -30,12 +31,13 @@ type SurveyTab = "profile" | "workload" | "sugar" | "done";
 type StepTab = Exclude<SurveyTab, "done">;
 
 // Pages live in the hash so links can be shared and the back button works
-type View = "beranda" | "penjelasan" | "persetujuan" | "kuesioner" | "hasil";
+type View = "beranda" | "penjelasan" | "kode" | "persetujuan" | "kuesioner" | "hasil";
 const viewFromHash = (hash: string): View => {
   if (hash.startsWith("#/kuesioner") || hash === "#kuesioner" || hash === "#pengantar") {
     return "kuesioner";
   }
   if (hash.startsWith("#/penjelasan")) return "penjelasan";
+  if (hash.startsWith("#/kode")) return "kode";
   if (hash.startsWith("#/persetujuan")) return "persetujuan";
   if (hash.startsWith("#/hasil")) return "hasil";
   return "beranda";
@@ -216,6 +218,8 @@ export function App() {
         return {
           ...INITIAL_QUESTIONNAIRE_STATE,
           ...parsed,
+          participationCode:
+            typeof parsed.participationCode === "string" ? parsed.participationCode : "",
           demographics: {
             ...INITIAL_QUESTIONNAIRE_STATE.demographics,
             ...(parsed.demographics ?? {}),
@@ -488,18 +492,36 @@ export function App() {
     setView(next);
   };
 
+  const hasParticipationCode = state.participationCode.trim().length === 4;
+  const needsCode = !hasParticipationCode && !state.hasConsented && activeTab !== "done";
   const needsConsent = !state.hasConsented && activeTab !== "done";
 
-  // Consent is given once and kept with the draft. A respondent who already
-  // agreed goes straight on from where they stopped.
+  // Participation code comes first, then informed consent, then the questions.
+  // A respondent who already consented goes straight on from where they stopped.
   const openKuesioner = () => {
     soundEngine.playIceClink();
+    if (needsCode) {
+      navigate("kode");
+      return;
+    }
     if (needsConsent) {
       navigate("persetujuan");
       return;
     }
     resumeOnOpen.current = activeTab !== "done" && answeredCount > 0;
     navigate("kuesioner");
+  };
+
+  const setParticipationCode = (code: string) => {
+    setState((prev) => ({
+      ...prev,
+      participationCode: code,
+    }));
+  };
+
+  const handleContinueFromCode = () => {
+    soundEngine.playSugarDrop();
+    navigate("persetujuan");
   };
 
   const setConsent = (agreed: boolean) => {
@@ -516,13 +538,18 @@ export function App() {
     navigate("kuesioner");
   };
 
-  // The questions stay closed until consent is given, even by direct link
+  // Code and consent come before the questions, even by direct link
   useEffect(() => {
+    if ((view === "persetujuan" || view === "kuesioner") && needsCode) {
+      window.history.replaceState(null, "", "#/kode");
+      setView("kode");
+      return;
+    }
     if (view === "kuesioner" && needsConsent) {
       window.history.replaceState(null, "", "#/persetujuan");
       setView("persetujuan");
     }
-  }, [view, needsConsent]);
+  }, [view, needsCode, needsConsent]);
 
   // A new page starts at its top, unless the respondent is picking up where they left off
   useEffect(() => {
@@ -559,7 +586,9 @@ export function App() {
     });
 
     // Initials TEST so `npm run sheet:hapus-test` can clear these rows later
-    setState({
+    setState((prev) => ({
+      participationCode:
+        prev.participationCode.trim().length === 4 ? prev.participationCode.trim() : "TEST",
       hasConsented: true,
       consentTimestamp: new Date().toISOString(),
       demographics: {
@@ -568,7 +597,7 @@ export function App() {
         rewardWalletNumber: "",
       },
       answers,
-    });
+    }));
   };
 
   const handleSubmitAll = async () => {
@@ -756,10 +785,21 @@ export function App() {
           </Suspense>
         )}
 
-        {view === "persetujuan" && (
+        {view === "kode" && (
+          <KodePartisipasi
+            code={state.participationCode}
+            onChange={setParticipationCode}
+            onContinue={handleContinueFromCode}
+            onBack={() => navigate("beranda")}
+          />
+        )}
+
+        {view === "persetujuan" && !needsCode && (
           <Persetujuan
             agreed={state.hasConsented}
             isResuming={state.hasConsented && answeredCount > 0}
+            participationCode={state.participationCode.trim()}
+            onEditCode={() => navigate("kode")}
             onToggle={setConsent}
             onAgree={handleAgree}
             onDecline={() => navigate("beranda")}
@@ -1050,6 +1090,12 @@ export function App() {
                       </div>
 
                       <div className="receipt-box">
+                        {state.participationCode.trim() && (
+                          <div className="receipt-row">
+                            <span>KODE PARTISIPASI</span>
+                            <strong>{state.participationCode.trim()}</strong>
+                          </div>
+                        )}
                         <div className="receipt-row">
                           <span>KODE PARTISIPAN</span>
                           <strong>{receipt.submissionId}</strong>

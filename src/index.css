@@ -2267,6 +2267,94 @@ ul, ol {
   color: var(--ink-3);
 }
 
+/* --------------------------------------------------------------------------
+   Kode partisipasi: 4 kotak sebelum lembar informed consent
+   -------------------------------------------------------------------------- */
+.kode-page {
+  grid-template-columns: minmax(0, 680px);
+}
+
+.kode-form {
+  font-family: var(--sans);
+}
+
+.kode-boxes {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: clamp(10px, 2.4vw, 16px);
+  margin-top: calc(var(--rule) * 0.5);
+}
+
+.kode-box {
+  width: clamp(56px, 16vw, 76px);
+  height: clamp(64px, 18vw, 84px);
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--card-paper);
+  color: var(--ink);
+  font-family: var(--code);
+  font-size: clamp(26px, 6vw, 34px);
+  font-weight: 760;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  caret-color: var(--pen);
+  box-shadow:
+    0 0 0 1.5px var(--line-strong),
+    -10px 16px 28px -20px var(--cast-page);
+  transition: box-shadow 0.2s ease, transform 0.2s var(--ease-out), background-color 0.2s ease;
+}
+
+.kode-box:focus {
+  outline: none;
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 2.25px var(--pen),
+    -10px 20px 30px -18px var(--cast-page);
+}
+
+.kode-box.is-filled {
+  color: var(--pen);
+  box-shadow:
+    0 0 0 2px var(--pen),
+    -10px 16px 28px -20px var(--cast-page);
+}
+
+.kode-box.is-missing {
+  box-shadow:
+    0 0 0 2px var(--error),
+    -10px 16px 28px -20px var(--cast-page);
+}
+
+.kode-summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.kode-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--card-paper);
+  box-shadow: 0 0 0 1.5px var(--line-strong);
+  font-family: var(--code);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.4;
+  color: var(--pen);
+}
+
+.kode-edit-link {
+  font-family: var(--sans);
+  font-size: 13.5px !important;
+  color: var(--ink-3);
+}
+
 button.cta {
   border: 0;
   font: inherit;

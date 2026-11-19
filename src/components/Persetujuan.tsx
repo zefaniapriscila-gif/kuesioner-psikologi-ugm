@@ -14,6 +14,8 @@ import { PaperLight } from "./PaperLight";
 interface PersetujuanProps {
   agreed: boolean;
   isResuming: boolean;
+  participationCode?: string;
+  onEditCode?: () => void;
   onToggle: (agreed: boolean) => void;
   onAgree: () => void;
   onDecline: () => void;
@@ -26,6 +28,8 @@ interface PersetujuanProps {
 export const Persetujuan: React.FC<PersetujuanProps> = ({
   agreed,
   isResuming,
+  participationCode,
+  onEditCode,
   onToggle,
   onAgree,
   onDecline,
@@ -72,6 +76,23 @@ export const Persetujuan: React.FC<PersetujuanProps> = ({
             Ringkasan penelitian
           </h2>
           <dl className="bab-rows">
+            {participationCode && (
+              <div>
+                <dt>Kode partisipasi</dt>
+                <dd className="kode-summary">
+                  <span className="kode-pill">{participationCode}</span>
+                  {onEditCode && (
+                    <button
+                      type="button"
+                      className="text-link kode-edit-link"
+                      onClick={onEditCode}
+                    >
+                      Ubah kode
+                    </button>
+                  )}
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Peneliti</dt>
               <dd>{STUDY_GROUP}</dd>

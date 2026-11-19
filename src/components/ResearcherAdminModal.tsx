@@ -181,6 +181,7 @@ export const ResearcherAdminModal: React.FC<ResearcherAdminModalProps> = ({
                   <thead>
                     <tr>
                       <th>ID</th>
+                      <th>Kode</th>
                       <th>Inisial</th>
                       <th>Angkatan</th>
                       {QUESTION_KEYS.map((k) => (
@@ -192,6 +193,7 @@ export const ResearcherAdminModal: React.FC<ResearcherAdminModalProps> = ({
                     {submissions.map((sub, i) => (
                       <tr key={i}>
                         <td>{String(sub.submissionId)}</td>
+                        <td>{String(sub.participationCode ?? "-")}</td>
                         <td>{String(sub.initials)}</td>
                         <td>{String(sub.angkatan)}</td>
                         {QUESTION_KEYS.map((k) => (
