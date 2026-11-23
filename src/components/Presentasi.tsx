@@ -146,6 +146,33 @@ interface Slide {
   body: React.ReactNode;
 }
 
+// The cover's es teh: the same glass as the beranda, standing on the table
+// edge, so the deck opens and closes on the drink the study is about
+function CoverGlass() {
+  return (
+    <div className="sx-cover-scene" aria-hidden="true">
+      <svg className="sx-ground" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="sxGroundFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#ffc496" stopOpacity="0.09" />
+            <stop offset="0.6" stopColor="#ffc496" stopOpacity="0.02" />
+            <stop offset="1" stopColor="#ffc496" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="sxGroundLine" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#e6e9f5" stopOpacity="0" />
+            <stop offset="0.4" stopColor="#e6e9f5" stopOpacity="0.16" />
+            <stop offset="0.78" stopColor="#f2c496" stopOpacity="0.38" />
+            <stop offset="1" stopColor="#e6e9f5" stopOpacity="0.1" />
+          </linearGradient>
+        </defs>
+        <rect x="0" y="885" width="1920" height="195" fill="url(#sxGroundFill)" />
+        <rect x="0" y="884" width="1920" height="2" fill="url(#sxGroundLine)" />
+      </svg>
+      <img className="sx-cover-glass" src="/presentasi-es-teh.webp" alt="" draggable={false} />
+    </div>
+  );
+}
+
 const SLIDES: Slide[] = [
   {
     id: "judul",
@@ -153,13 +180,7 @@ const SLIDES: Slide[] = [
     label: "Judul",
     body: (
       <div className="sx-cover">
-        <div className="sx-cover-cubes" aria-hidden="true">
-          <CubeMark className="sx-cube c1" />
-          <CubeMark className="sx-cube c2" />
-          <CubeMark className="sx-cube c3" />
-          <CubeMark className="sx-cube c4" />
-          <CubeMark className="sx-cube c5" />
-        </div>
+        <CoverGlass />
         <p className="sx-pill rv" style={at(0)}>
           Presentasi hasil penelitian · Metode Penelitian Kuantitatif
         </p>
@@ -531,11 +552,7 @@ const SLIDES: Slide[] = [
     label: "Penutup",
     body: (
       <div className="sx-cover is-end">
-        <div className="sx-cover-cubes" aria-hidden="true">
-          <CubeMark className="sx-cube c1" />
-          <CubeMark className="sx-cube c3" />
-          <CubeMark className="sx-cube c5" />
-        </div>
+        <CoverGlass />
         <p className="sx-pill rv" style={at(0)}>
           Terima kasih
         </p>
