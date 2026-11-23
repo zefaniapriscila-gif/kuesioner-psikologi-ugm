@@ -467,20 +467,17 @@ const SLIDES: Slide[] = [
                   </span>
                 ))}
               </p>
-              <div className="sx-pairs">
-                {p.aspek.map((a) => (
-                  <div className="sx-pair" key={a.label}>
-                    <p>{a.label}</p>
-                    {a.nilai.map((v, vi) => (
-                      <span className="sx-track is-thin" key={vi}>
-                        <i className={GROUP_TONES[vi]} style={{ width: onScale(v) }} />
-                        <b style={{ left: onScale(v) }}>{dec(v)}</b>
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <hr className="sx-compare-rule" />
+              {p.aspek.map((a) => (
+                <div className="sx-pair" key={a.label}>
+                  <p>{a.label}</p>
+                  {a.nilai.map((v, vi) => (
+                    <span className="sx-track is-thin" key={vi}>
+                      <i className={GROUP_TONES[vi]} style={{ width: onScale(v) }} />
+                      <b style={{ left: onScale(v) }}>{dec(v)}</b>
+                    </span>
+                  ))}
+                </div>
+              ))}
               <p className="sx-compare-text">{p.temuan}</p>
             </article>
           ))}

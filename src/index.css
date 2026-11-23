@@ -5827,7 +5827,6 @@ body {
   }
 }
 
-
 /* ==========================================================================
    Presentasi: depth pass. A textured night background (grain, a sugar-cube
    lattice, orbit rings) and darker, crisper cards
@@ -6334,44 +6333,6 @@ body {
     0 calc(var(--u) * 1.6) calc(var(--u) * 3.6) calc(var(--u) * -1.4) rgba(2, 4, 16, 0.9);
 }
 
-/* Presentasi: slide antarkelompok — kartu luar tegas, grafik di kartu kaca,
-   kesimpulan di kartu kuning transparan */
-.deck .sx-compare {
-  gap: calc(var(--u) * 0.7);
-  padding-top: calc(var(--u) * 1.3);
-  padding-bottom: calc(var(--u) * 1.3);
-  border: 1px solid rgba(163, 173, 255, 0.38);
-  background: linear-gradient(180deg, rgba(6, 9, 30, 0.78), rgba(10, 14, 44, 0.62));
-  box-shadow:
-    inset 0 1px 0 rgba(163, 173, 255, 0.22),
-    0 calc(var(--u) * 1.4) calc(var(--u) * 3) calc(var(--u) * -1.2) rgba(2, 4, 16, 0.85);
-}
-
-.sx-pairs {
-  display: grid;
-  gap: calc(var(--u) * 0.45);
-  padding: calc(var(--u) * 0.7) calc(var(--u) * 1) calc(var(--u) * 0.8);
-  border: 1px solid rgba(230, 233, 245, 0.16);
-  border-radius: calc(var(--u) * 0.8);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.sx-pairs .sx-pair p {
-  color: var(--ink);
-}
-
-.deck .sx-compare-text {
-  padding: calc(var(--u) * 0.7) calc(var(--u) * 0.9) calc(var(--u) * 0.8);
-  border: 1px solid rgba(255, 206, 84, 0.55);
-  border-radius: calc(var(--u) * 0.7);
-  background: rgba(255, 206, 84, 0.2);
-  font-size: calc(var(--u) * 1);
-  font-weight: 500;
-  line-height: 1.38;
-  color: #f4f5fc;
-}
-
 /* Presentasi: kalimat inti beban tugas duduk ±1 cm di bawah kartu
    (jarak antarbaris slide 2,2u + 0,55u) */
 .deck-slide.sx-hasil-tugas > .sx-note {
@@ -6398,19 +6359,6 @@ body {
 .deck-slide.sx-teori > .sx-spot {
   margin-top: calc(var(--u) * 1.1);
   margin-bottom: auto;
-}
-
-/* Presentasi: garis pemisah di tengah antara kartu grafik dan kartu kesimpulan */
-.sx-compare-rule {
-  width: 100%;
-  height: 0;
-  margin: auto 0;
-  border: 0;
-  border-top: 1px solid rgba(230, 233, 245, 0.18);
-}
-
-.deck .sx-compare-rule + .sx-compare-text {
-  margin-top: 0;
 }
 
 /* Presentasi: catatan NB antarkelompok ±0,6 cm di bawah kartu */
@@ -6521,4 +6469,9 @@ body {
 
 .sx-tile.is-survey .sx-tile-title em {
   color: var(--pen);
+}
+
+/* Presentasi: teks kesimpulan antarkelompok sedikit lebih kecil agar tidak padat */
+.deck .sx-compare-text {
+  font-size: calc(var(--u) * 0.98);
 }
