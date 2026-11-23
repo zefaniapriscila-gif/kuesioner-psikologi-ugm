@@ -103,3 +103,65 @@ export const loadMyPoint = (): ResultPoint | null => {
     return null;
   }
 };
+
+// ---------------------------------------------------------------------------
+// The group's spreadsheet is shared as "anyone with the link can view", so the
+// results can be read straight from it through the Sheets query endpoint.
+// Only the Q1..Q11 columns (and initials, to skip TEST rows) are requested.
+
+export const RESULTS_SHEET_ID = "1ppT4fKnSdoYqcb-xCY88eG7p2hlJ4kXytj5CYh1qVeY";
+
+interface GvizTable {
+  cols: { id: string; label: string }[];
+  rows: { c: ({ v: unknown } | null)[] }[];
+}
+
+async function gvizQuery(tq: string, signal?: AbortSignal): Promise<GvizTable> {
+  const url =
+    `https://docs.google.com/spreadsheets/d/${RESULTS_SHEET_ID}/gviz/tq` +
+    `?tqx=out:json&headers=1&tq=${encodeURIComponent(tq)}`;
+  const res = await fetch(url, { signal, cache: "no-store" });
+  const text = await res.text();
+  // The JSON comes wrapped in google.visualization.Query.setResponse(...)
+  const data = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+  if (data.status !== "ok" || !data.table) throw new Error("Spreadsheet tidak bisa dibaca");
+  return data.table as GvizTable;
+}
+
+export async function fetchSheetPoints(signal?: AbortSignal): Promise<ResultPoint[]> {
+  // Find the column letters by their header, so moved columns still work
+  const head = await gvizQuery("select * limit 0", signal);
+  const letterOf = (label: string) =>
+    head.cols.find((c) => (c.label || "").trim().toLowerCase() === label.toLowerCase())?.id;
+
+  const ids = [...TASK_QUESTIONS, ...SUGAR_QUESTIONS].map((q) => q.id);
+  const letters = ids.map(letterOf);
+  if (letters.some((l) => !l)) throw new Error("Kolom Q1–Q11 tidak ditemukan");
+  const initials = letterOf("initials");
+
+  const table = await gvizQuery(`select ${[...letters, ...(initials ? [initials] : [])].join(", ")}`, signal);
+  const points: ResultPoint[] = [];
+  for (const row of table.rows) {
+    const cells = row.c.map((cell) => (cell == null ? undefined : cell.v));
+    if (initials && String(cells[ids.length] ?? "").trim().toUpperCase() === "TEST") continue;
+    const answers: Record<string, unknown> = {};
+    ids.forEach((id, i) => {
+      answers[id] = cells[i] == null || cells[i] === "" ? undefined : cells[i];
+    });
+    const p = toPoint(answers);
+    if (p) points.push(p);
+  }
+  return points;
+}
+
+// The spreadsheet first; the Apps Script reader only if the sheet can't be read
+export async function loadResultPoints(signal?: AbortSignal): Promise<ResultPoint[]> {
+  try {
+    return await fetchSheetPoints(signal);
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    const url = resultsUrl();
+    if (!url) throw err;
+    return fetchResultPoints(url, signal);
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { CONTACT, STUDY_DURATION } from "../data/studyInfo";
+import { CONTACT, PENGAMPU, STUDY_DURATION, TIM } from "../data/studyInfo";
 import { CubeMark } from "./CubeMark";
 import { ArrowRight, ChatCircle } from "./Icons";
 import { PaperLight } from "./PaperLight";
@@ -14,21 +14,6 @@ const SEKILAS: [string, string][] = [
   ["Sifat", "Sukarela, boleh mundur kapan saja"],
   ["Data", "Dianonimkan, hanya untuk kepentingan akademis"],
   ["Risiko", "Sangat minimal, topiknya netral"],
-];
-
-const PENGAMPU: [string, string[]][] = [
-  ["Dosen pengampu", ["Samudera Fadlilla Jamaluddin, S.Psi., M.Sc.", "Satrio Priyo Adi, S.Psi., M.Sc."]],
-  ["Asisten dosen", ["Leoni Nevia Yesha Ischuo S."]],
-];
-
-// In the order of the group's own list, with the names they go by
-const TIM = [
-  { name: "Aulia Rizkiana Rahmawati", call: "Aul", role: "narahubung" },
-  { name: "Zefania Priscila", call: "Zef" },
-  { name: "Kenzie Angelica Dewanta Putri", call: "Kenzie" },
-  { name: "Fadhilah Ilmi", call: "Ilmi" },
-  { name: "Nur Aziizah", call: "Zizi" },
-  { name: "Shaufi Meditama", call: "Shaufi" },
 ];
 
 // The study explained on a page of the gate's notebook, under the same light

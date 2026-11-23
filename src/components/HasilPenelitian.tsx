@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { PaperLight } from "./PaperLight";
 import {
-  computeStats,
-  fetchResultPoints,
   loadMyPoint,
+  loadResultPoints,
   ResultPoint,
-  resultsUrl,
 } from "../lib/resultsFeed";
 
 interface HasilPenelitianProps {
   onOpenKuesioner: () => void;
+  onOpenPresentasi: () => void;
   onBack: () => void;
 }
 
@@ -57,18 +56,29 @@ const SugarCube: React.FC<{ x: number; y: number; mine?: boolean; delay: number;
   </g>
 );
 
-const describe = (r: number | null, n: number): string => {
-  if (n === 0) return "Belum ada jawaban yang masuk. Titik pertama akan muncul di sini begitu ada yang mengisi.";
-  if (r == null) return `Baru ${n} jawaban masuk. Garis kecenderungan muncul setelah ada minimal 3 jawaban yang berbeda.`;
-  const a = Math.abs(r);
-  const strength = a < 0.1 ? null : a < 0.3 ? "lemah" : a < 0.5 ? "sedang" : "kuat";
+// Descriptive only: the study pictures both variables without testing a link
+interface Summary {
+  n: number;
+  task: number | null;
+  sugar: number | null;
+}
+
+const summarize = (points: ResultPoint[]): Summary => {
+  const n = points.length;
+  const mean = (k: "task" | "sugar") => (n ? points.reduce((a, p) => a + p[k], 0) / n : null);
+  return { n, task: mean("task"), sugar: mean("sugar") };
+};
+
+const dec = (v: number | null) => (v == null ? "–" : v.toFixed(2).replace(".", ","));
+
+// Three equal bands on the 1–5 score scale
+const level = (v: number) => (v < 2.34 ? "rendah" : v < 3.67 ? "sedang" : "tinggi");
+
+const describe = ({ n, task, sugar }: Summary): string => {
+  if (n === 0 || task == null || sugar == null)
+    return "Belum ada jawaban yang masuk. Kubus pertama akan muncul di sini begitu ada yang mengisi.";
   const caveat = n < 30 ? " Datanya masih sedikit, jadi gambaran ini masih bisa berubah." : "";
-  if (!strength) return `Sejauh ini belum terlihat hubungan antara jumlah tugas dan konsumsi gula.${caveat}`;
-  const way =
-    r > 0
-      ? "makin banyak tugas akademik, konsumsi tinggi gula cenderung makin tinggi"
-      : "makin banyak tugas akademik, konsumsi tinggi gula justru cenderung makin rendah";
-  return `Ada kecenderungan ${strength}: ${way}.${caveat}`;
+  return `Rata-rata beban tugas akademik tergolong ${level(task)}, sedangkan kecenderungan konsumsi tinggi gula tergolong ${level(sugar)}.${caveat}`;
 };
 
 const agoText = (ms: number) => {
@@ -86,7 +96,7 @@ const demoPoints = (): ResultPoint[] =>
     return { task, sugar: Math.min(5, Math.max(1, 0.9 + task * 0.55 + noise)) };
   });
 
-export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesioner, onBack }) => {
+export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesioner, onOpenPresentasi, onBack }) => {
   const [points, setPoints] = useState<ResultPoint[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number>(0);
@@ -95,25 +105,19 @@ export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesione
   const myPoint = useMemo(loadMyPoint, []);
 
   useEffect(() => {
-    const url = resultsUrl();
     const demo = import.meta.env.DEV && new URLSearchParams(window.location.search).has("demo");
     if (demo) {
       setPoints(demoPoints());
       setUpdatedAt(Date.now());
       return;
     }
-    if (!url) {
-      setFailed(true);
-      return;
-    }
-
     let ctrl: AbortController | null = null;
     let timer = 0;
     const load = async () => {
       ctrl?.abort();
       ctrl = new AbortController();
       try {
-        const next = await fetchResultPoints(url, ctrl.signal);
+        const next = await loadResultPoints(ctrl.signal);
         setPoints(next);
         setFailed(false);
         setUpdatedAt(Date.now());
@@ -149,31 +153,13 @@ export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesione
     return () => window.clearInterval(t);
   }, []);
 
-  const stats = useMemo(() => computeStats(points ?? []), [points]);
+  const summary = useMemo(() => summarize(points ?? []), [points]);
 
   // Cubes already on the page stay put; only new arrivals drop in
   const firstNew = seen.current;
   useEffect(() => {
     if (points) seen.current = points.length;
   }, [points]);
-
-  const line = useMemo(() => {
-    if (stats.slope == null || stats.intercept == null || !points?.length) return null;
-    const xs = points.map((p) => p.task);
-    const lo = Math.min(...xs);
-    const hi = Math.max(...xs);
-    const at = (x: number) => stats.slope! * x + stats.intercept!;
-    // Keep the line inside the paper
-    const clampX = (x: number) => {
-      const y = at(x);
-      if (y > 5.5) return (5.5 - stats.intercept!) / stats.slope!;
-      if (y < 0.5) return (0.5 - stats.intercept!) / stats.slope!;
-      return x;
-    };
-    const a = clampX(lo);
-    const b = clampX(hi);
-    return { x1: px(a), y1: py(at(a)), x2: px(b), y2: py(at(b)) };
-  }, [stats, points]);
 
   const cols = Array.from({ length: (X1 - X0) / 10 + 1 }, (_, i) => X0 + i * 10);
   const rows = Array.from({ length: (Y1 - Y0) / 10 + 1 }, (_, i) => Y0 + i * 10);
@@ -202,7 +188,7 @@ export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesione
             ? "Grafik akan terisi otomatis begitu data dari spreadsheet bisa dibaca."
             : loading
             ? "Sebentar, sedang mengambil jawaban terbaru."
-            : describe(stats.r, n)}
+            : describe(summary)}
         </p>
 
         {!failed && !loading && (
@@ -212,8 +198,12 @@ export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesione
               <dd>{n}</dd>
             </div>
             <div>
-              <dt>Korelasi r</dt>
-              <dd>{stats.r == null ? "–" : stats.r.toFixed(2).replace(".", ",")}</dd>
+              <dt>Beban tugas (1–5)</dt>
+              <dd className="is-task">{dec(summary.task)}</dd>
+            </div>
+            <div>
+              <dt>Konsumsi gula (1–5)</dt>
+              <dd className="is-sugar">{dec(summary.sugar)}</dd>
             </div>
           </dl>
         )}
@@ -232,6 +222,16 @@ export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesione
             <span className="cta-sub">
               {myPoint ? "Kubus bertanda adalah jawabanmu" : "Jawabanmu ikut jadi satu kubus di grafik ini"}
             </span>
+          </a>
+          <a
+            className="text-link"
+            href="#/presentasi"
+            onClick={(e) => {
+              e.preventDefault();
+              onOpenPresentasi();
+            }}
+          >
+            Buka presentasi hasil penelitian
           </a>
           <a
             className="text-link"
@@ -271,16 +271,12 @@ export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesione
             </g>
           ))}
 
-          {line && (
-            <line
-              key={`${n}`}
-              className="plot-trend"
-              x1={line.x1}
-              y1={line.y1}
-              x2={line.x2}
-              y2={line.y2}
-              pathLength={1}
-            />
+          {/* Mean of each score, drawn as a dashed guide */}
+          {summary.task != null && summary.sugar != null && (
+            <g className="plot-means">
+              <line className="plot-mean is-task" x1={px(summary.task)} y1={Y0} x2={px(summary.task)} y2={Y1} />
+              <line className="plot-mean is-sugar" x1={X0} y1={py(summary.sugar)} x2={X1} y2={py(summary.sugar)} />
+            </g>
           )}
 
           {points?.map((p, i) => (
@@ -292,6 +288,18 @@ export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesione
               label={`Tugas ${p.task.toFixed(1)}, gula ${p.sugar.toFixed(1)}`}
             />
           ))}
+
+          {/* Labels go over the cubes so they stay readable */}
+          {summary.task != null && summary.sugar != null && (
+            <g className="plot-means">
+              <text className="plot-mean-label is-task" x={px(summary.task) + 6} y={Y0 + 12}>
+                rata-rata {dec(summary.task)}
+              </text>
+              <text className="plot-mean-label is-sugar" x={X1 - 4} y={py(summary.sugar) - 6}>
+                rata-rata {dec(summary.sugar)}
+              </text>
+            </g>
+          )}
 
           {myPoint && points && (
             <g className="plot-mine" transform={`translate(${px(myPoint.task)} ${py(myPoint.sugar)})`}>
@@ -316,8 +324,8 @@ export const HasilPenelitian: React.FC<HasilPenelitianProps> = ({ onOpenKuesione
           </text>
         </svg>
         <figcaption className="hasil-caption">
-          Satu kubus = satu responden. Skor = rata-rata jawaban 1–5, tugas dari Q1–Q3 dan gula
-          dari Q4–Q11.
+          Satu kubus = satu responden. Skor = rata-rata jawaban 1–5: beban tugas dari Q1–Q3,
+          konsumsi gula dari Q4–Q11. Angka di kiri adalah rata-rata seluruh responden.
         </figcaption>
       </figure>
     </section>

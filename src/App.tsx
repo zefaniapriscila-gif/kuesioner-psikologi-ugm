@@ -20,6 +20,9 @@ const PenjelasanPenelitian = React.lazy(() =>
 const HasilPenelitian = React.lazy(() =>
   import("./components/HasilPenelitian").then((m) => ({ default: m.HasilPenelitian }))
 );
+const Presentasi = React.lazy(() =>
+  import("./components/Presentasi").then((m) => ({ default: m.Presentasi }))
+);
 const ResearcherAdminModal = React.lazy(() =>
   import("./components/ResearcherAdminModal").then((m) => ({ default: m.ResearcherAdminModal }))
 );
@@ -31,7 +34,7 @@ type SurveyTab = "profile" | "workload" | "sugar" | "done";
 type StepTab = Exclude<SurveyTab, "done">;
 
 // Pages live in the hash so links can be shared and the back button works
-type View = "beranda" | "penjelasan" | "kode" | "persetujuan" | "kuesioner" | "hasil";
+type View = "beranda" | "penjelasan" | "kode" | "persetujuan" | "kuesioner" | "hasil" | "presentasi";
 const viewFromHash = (hash: string): View => {
   if (hash.startsWith("#/kuesioner") || hash === "#kuesioner" || hash === "#pengantar") {
     return "kuesioner";
@@ -40,6 +43,7 @@ const viewFromHash = (hash: string): View => {
   if (hash.startsWith("#/kode")) return "kode";
   if (hash.startsWith("#/persetujuan")) return "persetujuan";
   if (hash.startsWith("#/hasil")) return "hasil";
+  if (hash.startsWith("#/presentasi")) return "presentasi";
   return "beranda";
 };
 
@@ -781,7 +785,17 @@ export function App() {
 
         {view === "hasil" && (
           <Suspense fallback={<div className="hasil-loading" style={{ minHeight: "50vh" }} />}>
-            <HasilPenelitian onOpenKuesioner={openKuesioner} onBack={() => navigate("beranda")} />
+            <HasilPenelitian
+              onOpenKuesioner={openKuesioner}
+              onOpenPresentasi={() => navigate("presentasi")}
+              onBack={() => navigate("beranda")}
+            />
+          </Suspense>
+        )}
+
+        {view === "presentasi" && (
+          <Suspense fallback={<div style={{ minHeight: "100svh" }} />}>
+            <Presentasi onClose={() => navigate("hasil")} />
           </Suspense>
         )}
 

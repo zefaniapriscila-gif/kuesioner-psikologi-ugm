@@ -20,3 +20,18 @@ export const CONSENT_TEXT =
 
 export const CONSENT_STATEMENT =
   "Dengan menandai kotak di bawah ini, Anda menyatakan telah membaca dan memahami informasi di atas serta menyetujui untuk berpartisipasi secara sukarela dalam penelitian ini.";
+
+export const PENGAMPU: [string, string[]][] = [
+  ["Dosen pengampu", ["Samudera Fadlilla Jamaluddin, S.Psi., M.Sc.", "Satrio Priyo Adi, S.Psi., M.Sc."]],
+  ["Asisten dosen", ["Leoni Nevia Yesha Ischuo S."]],
+];
+
+// In the order of the group's own list, with the names they go by
+export const TIM: { name: string; call: string; role?: string }[] = [
+  { name: "Aulia Rizkiana Rahmawati", call: "Aul", role: "narahubung" },
+  { name: "Zefania Priscila", call: "Zef" },
+  { name: "Kenzie Angelica Dewanta Putri", call: "Kenzie" },
+  { name: "Fadhilah Ilmi", call: "Ilmi" },
+  { name: "Nur Aziizah", call: "Zizi" },
+  { name: "Shaufi Meditama", call: "Shaufi" },
+];
