@@ -459,6 +459,7 @@ const SLIDES: Slide[] = [
                   </div>
                 ))}
               </div>
+              <hr className="sx-compare-rule" />
               <p className="sx-compare-text">{p.temuan}</p>
             </article>
           ))}
