@@ -238,7 +238,7 @@ const SLIDES: Slide[] = [
     body: (
       <>
         <Kicker section={1} />
-        <Title>Celah penelitian & tujuan</Title>
+        <Title>Research Gap & tujuan</Title>
         <div className="sx-split">
           <ul className="sx-findings">
             {CELAH.temuan.map((t, i) => (
@@ -446,17 +446,19 @@ const SLIDES: Slide[] = [
                   </span>
                 ))}
               </p>
-              {p.aspek.map((a) => (
-                <div className="sx-pair" key={a.label}>
-                  <p>{a.label}</p>
-                  {a.nilai.map((v, vi) => (
-                    <span className="sx-track is-thin" key={vi}>
-                      <i className={GROUP_TONES[vi]} style={{ width: onScale(v) }} />
-                      <b style={{ left: onScale(v) }}>{dec(v)}</b>
-                    </span>
-                  ))}
-                </div>
-              ))}
+              <div className="sx-pairs">
+                {p.aspek.map((a) => (
+                  <div className="sx-pair" key={a.label}>
+                    <p>{a.label}</p>
+                    {a.nilai.map((v, vi) => (
+                      <span className="sx-track is-thin" key={vi}>
+                        <i className={GROUP_TONES[vi]} style={{ width: onScale(v) }} />
+                        <b style={{ left: onScale(v) }}>{dec(v)}</b>
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
               <p className="sx-compare-text">{p.temuan}</p>
             </article>
           ))}

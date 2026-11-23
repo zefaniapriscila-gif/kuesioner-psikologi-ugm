@@ -23,7 +23,7 @@ export const FAKTA_PEMBUKA = [
   },
   {
     angka: "7 dari 10",
-    isi: "mahasiswa yang diwawancarai naik berat badan selama kuliah, dan terbiasa makan saat stres karena banyak tugas.",
+    isi: "mahasiswa yang diwawancarai mengalami peningkatan berat badan selama kuliah dan terbiasa mengonsumsi makanan ketika mengalami stres akibat banyaknya tugas.",
     sumber: "Ramadhani & Mastuti, 2022",
   },
 ];
@@ -38,7 +38,7 @@ export const ALUR_TEORI = [
 
 export const TEORI_SOROTAN = {
   angka: "60–70%",
-  isi: "individu melaporkan makan lebih banyak makanan manis saat stres tinggi. Gula dapat meredakan cemas dan memperbaiki suasana hati melalui sumbu HPA.",
+  isi: "Individu melaporkan lebih banyak mengonsumsi makanan manis saat stres tinggi. Gula dapat meredakan cemas dan memperbaiki suasana hati melalui mekanisme yang berkaitan dengan respons stres pada sumbu HPA.",
   sumber: "Ulrich-Lai, 2016",
 };
 
@@ -152,7 +152,7 @@ export const PERBANDINGAN: {
   {
     judul: "Usia",
     kelompok: ["18–19 th (n = 33)", "20–22 th (n = 23)"],
-    temuan: "Kelompok 18–19 tahun lebih tinggi di semua aspek beban tugas dan konsumsi gula.",
+    temuan: "Kelompok usia 18–19 tahun memiliki tingkat beban tugas dan konsumsi gula yang lebih tinggi pada seluruh aspek yang diukur.",
     aspek: [
       { label: "Merasa banyak tugas", nilai: [4.85, 4.39] },
       { label: "Makanan manis per minggu", nilai: [2.85, 2.48] },
@@ -162,7 +162,8 @@ export const PERBANDINGAN: {
   {
     judul: "Jenis kelamin",
     kelompok: ["Mahasiswi (n = 47)", "Mahasiswa (n = 9)"],
-    temuan: "Mahasiswi merasa tugasnya lebih berat dan lebih butuh gula, tetapi mahasiswa lebih sering makan makanan manis.",
+    temuan:
+      "Mahasiswi cenderung merasakan beban tugas yang lebih tinggi dan kebutuhan konsumsi gula yang lebih besar, sedangkan mahasiswa cenderung lebih sering mengonsumsi makanan manis.",
     aspek: [
       { label: "Durasi pengerjaan tugas", nilai: [4.09, 3.33] },
       { label: "Butuh minuman manis saat nugas", nilai: [3.02, 2.33] },
@@ -172,7 +173,8 @@ export const PERBANDINGAN: {
   {
     judul: "Domisili",
     kelompok: ["DIY (n = 15)", "Jawa selain DIY (n = 29)", "Luar Jawa (n = 12)"],
-    temuan: "Perbedaannya kecil. Responden dari Jawa selain DIY paling jarang makan makanan manis.",
+    temuan:
+      "Perbedaan antarkelompok relatif kecil. Responden yang berasal dari Jawa (di luar DIY) menunjukkan frekuensi konsumsi makanan manis paling rendah.",
     aspek: [
       { label: "Merasa banyak tugas", nilai: [4.47, 4.69, 4.83] },
       { label: "Makanan manis per minggu", nilai: [2.93, 2.48, 2.92] },
@@ -181,7 +183,7 @@ export const PERBANDINGAN: {
 ];
 
 export const PERBANDINGAN_CATATAN =
-  "Perbandingan bersifat deskriptif dan ukuran kelompok tidak seimbang, jadi belum menunjukkan pengaruh usia, jenis kelamin, atau domisili.";
+  "(NB) Perbandingan bersifat deskriptif sehingga tidak dapat mengungkap pengaruh usia, jenis kelamin, atau domisili.";
 
 // --- 4. Diskusi ------------------------------------------------------------
 
