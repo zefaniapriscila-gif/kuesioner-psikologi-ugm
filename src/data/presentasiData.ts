@@ -67,7 +67,7 @@ export const METODE = {
   },
   pengumpulan: {
     label: "Pengumpulan data",
-    judul: "Survei daring dengan kuesioner tertutup",
+    judul: "Survei daring dengan kuesioner tertutup, menggunakan *convenience sampling*",
     langkah: ["Informed consent", "Data diri", "Beban tugas", "Konsumsi gula"],
   },
   instrumen: {

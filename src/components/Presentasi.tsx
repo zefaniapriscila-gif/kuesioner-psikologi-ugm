@@ -323,7 +323,7 @@ const SLIDES: Slide[] = [
             <span className="sx-tile-icon">{SURVEY_ICON}</span>
             {METODE.pengumpulan.label}
           </p>
-          <p className="sx-tile-title">{METODE.pengumpulan.judul}</p>
+          <p className="sx-tile-title">{emph(METODE.pengumpulan.judul)}</p>
           <ol className="sx-steps">
             {METODE.pengumpulan.langkah.map((l, i) => (
               <li key={l} style={at(i + 4)}>

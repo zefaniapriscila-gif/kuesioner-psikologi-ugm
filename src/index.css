@@ -6512,3 +6512,13 @@ body {
     transform: none;
   }
 }
+
+/* Presentasi: judul pengumpulan data satu baris, dengan teknik sampling */
+.sx-tile.is-survey .sx-tile-title {
+  white-space: nowrap;
+  font-size: calc(var(--u) * 1.55);
+}
+
+.sx-tile.is-survey .sx-tile-title em {
+  color: var(--pen);
+}
