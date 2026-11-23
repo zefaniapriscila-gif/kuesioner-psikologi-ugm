@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CubeMark } from "./CubeMark";
 import { PENGAMPU, STUDY_GROUP, TIM } from "../data/studyInfo";
 import {
@@ -14,7 +14,6 @@ import {
   HASIL_TUGAS_INTI,
   LIMITASI_REKOMENDASI,
   METODE,
-  METODE_CATATAN,
   N_RESPONDEN,
   PERBANDINGAN,
   PERBANDINGAN_CATATAN,
@@ -46,6 +45,76 @@ const at = (i: number) => ({ "--i": i }) as React.CSSProperties;
 const GROUP_TONES = ["is-a", "is-b", "is-c"];
 
 // ---------------------------------------------------------------------------
+
+// A slide that is fading out renders still: no count-ups, no entrances
+const StillContext = createContext(false);
+
+const prefersStill = () =>
+  typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// Counts the number inside a label up from zero, keeping its format:
+// "61,27%", "4,66", "56". Anything else stays as written.
+const CountUp: React.FC<{ text: string; delay?: number }> = ({ text, delay = 0 }) => {
+  const still = useContext(StillContext);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const parts = text.split(/(\d+(?:,\d+)?)/);
+    // Only a single number counts; ranges ("3–4") and ratios ("7 dari 10")
+    // would pass through values that mean something else
+    if (still || parts.length !== 3 || prefersStill()) {
+      el.textContent = text;
+      return;
+    }
+    const targets = parts.map((part, i) =>
+      i % 2 ? { value: parseFloat(part.replace(",", ".")), decimals: (part.split(",")[1] ?? "").length } : null
+    );
+    const render = (k: number) =>
+      parts
+        .map((part, i) => {
+          const t = targets[i];
+          return t ? (t.value * k).toFixed(t.decimals).replace(".", ",") : part;
+        })
+        .join("");
+
+    el.textContent = render(0);
+    const start = performance.now() + delay;
+    const DURATION = 1300;
+    let raf = 0;
+    const tick = (now: number) => {
+      const k = Math.min(1, Math.max(0, (now - start) / DURATION));
+      el.textContent = render(1 - Math.pow(1 - k, 4));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [text, delay, still]);
+
+  return (
+    <>
+      <span ref={ref} aria-hidden="true" className="sx-count">
+        {text}
+      </span>
+      <span className="visually-hidden">{text}</span>
+    </>
+  );
+};
+
+// Clipboard icon for the survey card
+const SURVEY_ICON = (
+  <svg viewBox="0 0 24 24">
+    <rect x="5" y="4" width="14" height="17" rx="2" />
+    <path d="M9 4.5V3h6v1.5M9 10h6M9 14h6M9 18h3" />
+  </svg>
+);
+
+// "*word*" becomes an emphasised word
+const emph = (text: string) =>
+  text.split(/(\*[^*]+\*)/).map((part, i) =>
+    part.startsWith("*") ? <em key={i}>{part.slice(1, -1)}</em> : <React.Fragment key={i}>{part}</React.Fragment>
+  );
 
 const Kicker: React.FC<{ section: number }> = ({ section }) => (
   <p className="sx-kicker rv" style={at(0)}>
@@ -124,7 +193,7 @@ const SLIDES: Slide[] = [
         <div className="sx-grid-3">
           {FAKTA_PEMBUKA.map((f, i) => (
             <article className="sx-fact rv" style={at(i + 2)} key={f.sumber}>
-              <p className="sx-fact-num">{f.angka}</p>
+              <p className="sx-fact-num"><CountUp text={f.angka} delay={250 + i * 90} /></p>
               <p className="sx-fact-text">{f.isi}</p>
               <p className="sx-source">{f.sumber}</p>
             </article>
@@ -145,13 +214,15 @@ const SLIDES: Slide[] = [
           {ALUR_TEORI.map((s, i) => (
             <li key={s.judul} className={`rv ${i === ALUR_TEORI.length - 1 ? "is-end" : ""}`} style={at(i + 2)}>
               <span className="sx-flow-dot">{i + 1}</span>
-              <p className="sx-flow-title">{s.judul}</p>
-              <p className="sx-flow-text">{s.isi}</p>
+              <div className="sx-flow-card">
+                <p className="sx-flow-title">{s.judul}</p>
+                <p className="sx-flow-text">{s.isi}</p>
+              </div>
             </li>
           ))}
         </ol>
         <div className="sx-spot rv" style={at(6)}>
-          <p className="sx-spot-num">{TEORI_SOROTAN.angka}</p>
+          <p className="sx-spot-num"><CountUp text={TEORI_SOROTAN.angka} delay={650} /></p>
           <p className="sx-spot-text">
             {TEORI_SOROTAN.isi}
             <span className="sx-source">{TEORI_SOROTAN.sumber}</span>
@@ -201,20 +272,46 @@ const SLIDES: Slide[] = [
       <>
         <Kicker section={2} />
         <Title>
-          Memotret, <em className="is-pen">bukan menguji</em>
+          Mendeskripsikan, <em className="is-pen">bukan menguji</em>
         </Title>
-        <div className="sx-grid-4">
-          {METODE.map((m, i) => (
-            <div className="sx-method rv" style={at(i + 2)} key={m.label}>
-              <p className="sx-method-n">{String(i + 1).padStart(2, "0")}</p>
-              <p className="sx-label">{m.label}</p>
-              <p className="sx-method-text">{m.isi}</p>
-            </div>
-          ))}
-        </div>
-        <p className="sx-note rv" style={at(6)}>
-          {METODE_CATATAN}
-        </p>
+        <dl className="sx-specs rv" style={at(2)}>
+          <div>
+            <dt>{METODE.pendekatan.label}</dt>
+            <dd>
+              {METODE.pendekatan.utama} <em>{METODE.pendekatan.sorot}</em>
+            </dd>
+            <p>{METODE.pendekatan.isi}</p>
+          </div>
+          <div>
+            <dt>{METODE.instrumen.label}</dt>
+            <dd>{METODE.instrumen.judul}</dd>
+            <p>
+              <span className="is-pen">{METODE.instrumen.tugas} butir beban tugas</span> ·{" "}
+              <span className="is-tea">{METODE.instrumen.gula} butir konsumsi gula</span>
+            </p>
+          </div>
+          <div>
+            <dt>{METODE.analisis.label}</dt>
+            <dd>{METODE.analisis.judul}</dd>
+            <p>{METODE.analisis.ukuran.map((u) => u.simbol).join(" · ")}</p>
+          </div>
+        </dl>
+
+        <article className="sx-tile is-survey rv" style={at(3)}>
+          <p className="sx-tile-label">
+            <span className="sx-tile-icon">{SURVEY_ICON}</span>
+            {METODE.pengumpulan.label}
+          </p>
+          <p className="sx-tile-title">{METODE.pengumpulan.judul}</p>
+          <ol className="sx-steps">
+            {METODE.pengumpulan.langkah.map((l, i) => (
+              <li key={l} style={at(i + 4)}>
+                <span>{i + 1}</span>
+                {l}
+              </li>
+            ))}
+          </ol>
+        </article>
       </>
     ),
   },
@@ -228,10 +325,10 @@ const SLIDES: Slide[] = [
         <Title>Siapa yang mengisi?</Title>
         <div className="sx-resp">
           <div className="sx-resp-total rv" style={at(2)}>
-            <p className="sx-huge">{N_RESPONDEN}</p>
+            <p className="sx-huge"><CountUp text={String(N_RESPONDEN)} delay={200} /></p>
             <p className="sx-resp-cap">responden mahasiswa S1 Psikologi UGM</p>
             <p className="sx-resp-extra">
-              <strong>{ANGKATAN_DOMINAN.persen}</strong> {ANGKATAN_DOMINAN.label}
+              <strong><CountUp text={ANGKATAN_DOMINAN.persen} delay={500} /></strong> {ANGKATAN_DOMINAN.label}
             </p>
           </div>
           <div className="sx-resp-bars">
@@ -280,14 +377,12 @@ const SLIDES: Slide[] = [
             <article className="sx-stat rv" style={at(i + 2)} key={h.judul}>
               <p className="sx-label">{h.judul}</p>
               <p className="sx-stat-num">
-                {h.angka}
-                <span>{h.satuan}</span>
+                <CountUp text={h.angka} delay={250 + i * 90} />
+                <span className="sx-stat-unit">{h.satuan}</span>
               </p>
-              {i === 0 && (
-                <div className="sx-meter" aria-hidden="true">
-                  <i style={{ width: onScale(4.66) }} />
-                </div>
-              )}
+              <div className="sx-meter" aria-hidden="true">
+                <i style={{ width: `${h.persen}%` }} />
+              </div>
               <p className="sx-stat-foot">{h.modus}</p>
             </article>
           ))}
@@ -380,7 +475,7 @@ const SLIDES: Slide[] = [
       <>
         <Kicker section={4} />
         <p className="sx-statement rv" style={at(1)}>
-          {DISKUSI_UTAMA}
+          {emph(DISKUSI_UTAMA)}
         </p>
         <div className="sx-grid-3">
           {DISKUSI.map((d, i) => (
@@ -476,18 +571,31 @@ export const Presentasi: React.FC<PresentasiProps> = ({ onClose }) => {
   const [dir, setDir] = useState<1 | -1>(1);
   const [isFull, setIsFull] = useState(false);
   const [idle, setIdle] = useState(false);
+  // The slide being left stays on screen for a moment and fades out
+  const [leaving, setLeaving] = useState<{ index: number; dir: 1 | -1 } | null>(null);
   const deckRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
+  const secRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicator, setIndicator] = useState<{ x: number; w: number; on: boolean }>({ x: 0, w: 0, on: false });
   const touch = useRef<{ x: number; y: number } | null>(null);
 
   const go = useCallback(
     (next: number) => {
       const i = Math.min(Math.max(0, next), COUNT - 1);
       if (i === index) return;
-      setDir(i > index ? 1 : -1);
+      const d = i > index ? 1 : -1;
+      setDir(d);
+      setLeaving({ index, dir: d });
       setIndex(i);
     },
     [index]
   );
+
+  useEffect(() => {
+    if (!leaving) return;
+    const t = window.setTimeout(() => setLeaving(null), 560);
+    return () => window.clearTimeout(t);
+  }, [leaving]);
 
   // Keep the slide in the link, so a refresh or a shared link opens the same one
   useEffect(() => {
@@ -576,6 +684,26 @@ export const Presentasi: React.FC<PresentasiProps> = ({ onClose }) => {
   }, [isFull]);
 
   const slide = SLIDES[index];
+
+  // The highlight under the section buttons slides to the current section
+  useLayoutEffect(() => {
+    const place = () => {
+      const b = slide.section ? secRefs.current[slide.section - 1] : null;
+      setIndicator((cur) => (b ? { x: b.offsetLeft, w: b.offsetWidth, on: true } : { ...cur, on: false }));
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [slide.section]);
+
+  // The cover's cubes drift a little with the pointer
+  const onStageMove = (e: React.PointerEvent<HTMLElement>) => {
+    const el = stageRef.current;
+    if (!el || e.pointerType !== "mouse") return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
+    el.style.setProperty("--my", (((e.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
+  };
   const firstOf = (section: number) => SLIDES.findIndex((s) => s.section === section);
 
   return (
@@ -602,22 +730,61 @@ export const Presentasi: React.FC<PresentasiProps> = ({ onClose }) => {
     >
       <div className="deck-viewport">
         <article
+          ref={stageRef}
+          onPointerMove={onStageMove}
+          data-slide={slide.id}
           className="deck-stage"
           aria-roledescription="slide"
           aria-label={`Slide ${index + 1} dari ${COUNT}: ${slide.label}`}
         >
-          <div className="deck-progress" aria-hidden="true">
-            <i style={{ width: `${((index + 1) / COUNT) * 100}%` }} />
+          <div className="deck-decor" aria-hidden="true">
+            <i className="deck-lattice" />
+            <svg className="deck-orbit" viewBox="-50 -50 100 100">
+              <circle className="o-glow" r="30" />
+              <circle className="o-ring o-1" r="48" />
+              <g className="o-spin o-spin-a">
+                <circle className="o-ring o-2" r="37" />
+                <circle className="o-bead is-tea" cx="0" cy="-37" r="1.1" />
+                <circle className="o-bead" cx="26.2" cy="26.2" r="0.7" />
+              </g>
+              <g className="o-spin o-spin-b">
+                <circle className="o-ring o-3" r="26" />
+                <circle className="o-bead is-pen" cx="-26" cy="0" r="0.9" />
+              </g>
+              <circle className="o-ring o-4" r="15" />
+            </svg>
+            <i className="deck-grain" />
           </div>
-          <div key={slide.id} className={`deck-slide sx-${slide.id} ${dir > 0 ? "from-right" : "from-left"}`}>
+          {leaving && leaving.index !== index && (
+            <StillContext.Provider value={true}>
+              <div
+                key={`out-${SLIDES[leaving.index].id}`}
+                className={`deck-slide sx-${SLIDES[leaving.index].id} is-leaving ${leaving.dir > 0 ? "to-left" : "to-right"}`}
+                aria-hidden="true"
+              >
+                {SLIDES[leaving.index].body}
+              </div>
+            </StillContext.Provider>
+          )}
+          <div key={slide.id} className={`deck-slide sx-${slide.id} is-entering ${dir > 0 ? "from-right" : "from-left"}`}>
             {slide.body}
           </div>
+          {index === 0 && (
+            <p className="deck-hint" aria-hidden="true">
+              <kbd>→</kbd> atau geser untuk mulai
+            </p>
+          )}
           <footer className="deck-foot" aria-hidden="true">
             <span>
               <CubeMark className="deck-foot-mark" />
               Takaran · {STUDY_GROUP}
             </span>
-            <span>
+            <span className="deck-pager">
+              <span className="deck-ticks">
+                {SLIDES.map((s, i) => (
+                  <i key={s.id} className={i === index ? "is-now" : i < index ? "is-past" : ""} />
+                ))}
+              </span>
               {String(index + 1).padStart(2, "0")} / {String(COUNT).padStart(2, "0")}
             </span>
           </footer>
@@ -632,12 +799,20 @@ export const Presentasi: React.FC<PresentasiProps> = ({ onClose }) => {
         </button>
 
         <ol className="deck-sections">
+          <li
+            className={`deck-sec-ind ${indicator.on ? "is-on" : ""}`}
+            aria-hidden="true"
+            style={{ transform: `translateX(${indicator.x}px)`, width: indicator.w }}
+          />
           {SECTIONS.map((s) => {
             const active = slide.section === s.n;
             return (
               <li key={s.n}>
                 <button
                   type="button"
+                  ref={(el) => {
+                    secRefs.current[s.n - 1] = el;
+                  }}
                   className={`deck-sec ${active ? "is-active" : ""}`}
                   aria-current={active ? "step" : undefined}
                   onClick={() => go(firstOf(s.n))}

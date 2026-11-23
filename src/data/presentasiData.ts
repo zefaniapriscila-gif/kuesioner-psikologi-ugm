@@ -12,8 +12,8 @@ export const N_RESPONDEN = 56;
 // Tiga fakta pembuka: angka besar + penjelasan singkat + sumber
 export const FAKTA_PEMBUKA = [
   {
-    angka: "Stresor",
-    isi: "Beban akademik yang tinggi (academic overload) adalah salah satu dimensi stresor akademik pada mahasiswa.",
+    angka: "1.014",
+    isi: "mahasiswa diteliti: stresor akademik, termasuk beban akademik berlebih, berpengaruh langsung pada respons stres.",
     sumber: "Ruiz-Camacho et al., 2025",
   },
   {
@@ -57,15 +57,37 @@ export const CELAH = {
 
 // --- 2. Metode ---------------------------------------------------------------
 
-export const METODE = [
-  { label: "Pendekatan", isi: "Kuantitatif, desain deskriptif" },
-  { label: "Metode", isi: "Survei daring dengan kuesioner tertutup" },
-  { label: "Instrumen", isi: "11 butir: 3 beban tugas, 8 konsumsi gula, skor 1–5" },
-  { label: "Analisis", isi: "Statistik deskriptif: mean, SD, median, modus" },
-];
-
-export const METODE_CATATAN =
-  "Menggambarkan kedua variabel tanpa menguji hubungan atau pengaruh antarvariabel.";
+// Slide metode: tiga ringkasan (pendekatan, instrumen, analisis) dan alur survei
+export const METODE = {
+  pendekatan: {
+    label: "Pendekatan",
+    utama: "Kuantitatif",
+    sorot: "deskriptif",
+    isi: "Menggambarkan apa adanya, tanpa menguji hubungan antarvariabel.",
+  },
+  pengumpulan: {
+    label: "Pengumpulan data",
+    judul: "Survei daring dengan kuesioner tertutup",
+    langkah: ["Informed consent", "Data diri", "Beban tugas", "Konsumsi gula"],
+  },
+  instrumen: {
+    label: "Instrumen",
+    judul: "11 butir, skor 1–5",
+    tugas: 3,
+    gula: 8,
+  },
+  analisis: {
+    label: "Analisis",
+    judul: "Statistik deskriptif",
+    // simbol mengikuti gaya APA
+    ukuran: [
+      { simbol: "M", nama: "Rata-rata" },
+      { simbol: "SD", nama: "Simpangan baku" },
+      { simbol: "Mdn", nama: "Median" },
+      { simbol: "Mo", nama: "Modus" },
+    ],
+  },
+};
 
 export const RESPONDEN = [
   {
@@ -96,10 +118,11 @@ export const ANGKATAN_DOMINAN = { label: "angkatan 2025", persen: "64,3%" };
 
 // --- 3. Hasil ------------------------------------------------------------------
 
+// persen = bagian responden yang memilih jawaban terbanyak (modus)
 export const HASIL_TUGAS = [
-  { angka: "4,66", satuan: "dari 5", judul: "Merasa memiliki banyak tugas", modus: "73,2% sangat setuju" },
-  { angka: "3–4", satuan: "tugas/minggu", judul: "Jumlah tugas per minggu", modus: "dipilih 48,2% responden" },
-  { angka: "3–4", satuan: "jam", judul: "Durasi pengerjaan tugas", modus: "dipilih 37,5% responden" },
+  { angka: "4,66", satuan: "rata-rata dari 5", judul: "Merasa memiliki banyak tugas", persen: 73.2, modus: "73,2% menjawab sangat setuju" },
+  { angka: "3–4", satuan: "tugas per minggu", judul: "Jumlah tugas per minggu", persen: 48.2, modus: "48,2% responden" },
+  { angka: "3–4", satuan: "jam per tugas", judul: "Durasi pengerjaan tugas", persen: 37.5, modus: "37,5% responden" },
 ];
 
 export const HASIL_TUGAS_INTI = "Sebagian besar responden merasakan beban tugas akademik yang tinggi.";
@@ -162,8 +185,9 @@ export const PERBANDINGAN_CATATAN =
 
 // --- 4. Diskusi ------------------------------------------------------------
 
+// Kata di antara *bintang* ditampilkan miring dan berwarna
 export const DISKUSI_UTAMA =
-  "Beban tugas dirasakan tinggi, tetapi tidak langsung diikuti konsumsi gula yang tinggi.";
+  "Beban tugas dirasakan *tinggi*, tetapi tidak langsung diikuti konsumsi gula yang *tinggi*.";
 
 export const DISKUSI = [
   {

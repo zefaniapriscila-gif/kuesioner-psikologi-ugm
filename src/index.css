@@ -4445,7 +4445,7 @@ body {
   color: var(--ink);
 }
 
-.sx-stat-num span {
+.sx-stat-num .sx-stat-unit {
   font-size: calc(var(--u) * 1.3);
   font-weight: 650;
   font-stretch: 100%;
@@ -5099,7 +5099,7 @@ body {
   gap: calc(var(--u) * 0.8);
 }
 
-.sx-hasil-tugas .sx-stat-num span {
+.sx-hasil-tugas .sx-stat-num .sx-stat-unit {
   font-size: calc(var(--u) * 1.6);
 }
 
@@ -5171,4 +5171,1154 @@ body {
 .plot-mean-label.is-sugar {
   fill: var(--accent-text);
   text-anchor: end;
+}
+
+/* ==========================================================================
+   Presentasi: motion. One easing for everything (a long, soft ease-out),
+   nothing bounces, nothing loops fast. Slides cross-fade with a hint of
+   depth; parts of a slide surface in order; numbers count up once.
+   ========================================================================== */
+
+.deck {
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-soft: cubic-bezier(0.55, 0, 0.75, 0.2);
+}
+
+/* A slow drift of light behind the slide */
+.deck-stage::after {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  z-index: 0;
+  background:
+    radial-gradient(32% 30% at 28% 30%, rgba(163, 173, 255, 0.11), transparent 70%),
+    radial-gradient(30% 28% at 72% 72%, rgba(242, 163, 91, 0.09), transparent 70%);
+  animation: deck-aurora 26s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes deck-aurora {
+  to {
+    transform: translate3d(5%, -4%, 0) rotate(7deg) scale(1.08);
+  }
+}
+
+.deck-slide {
+  z-index: 1;
+}
+
+/* Cross-fade: the new slide settles in, the old one recedes */
+.deck-slide.is-entering {
+  animation: slide-settle 0.8s var(--ease-soft) both;
+}
+
+.deck-slide.is-leaving {
+  z-index: 0;
+  pointer-events: none;
+  animation: slide-recede 0.5s var(--ease-in-soft) both;
+}
+
+.deck-slide.is-leaving.to-right {
+  animation-name: slide-recede-right;
+}
+
+.deck-slide.is-leaving .rv,
+.deck-slide.is-leaving .sx-track i,
+.deck-slide.is-leaving .sx-meter i,
+.deck-slide.is-leaving .sx-stackbar span,
+.deck-slide.is-leaving .sx-flow::before,
+.deck-slide.is-leaving .sx-track b,
+.deck-slide.is-leaving .sx-kicker::after,
+.deck-slide.is-leaving .sx-cover-cubes {
+  animation: none;
+}
+
+@keyframes slide-settle {
+  from {
+    opacity: 0;
+    transform: scale(1.012);
+  }
+}
+
+@keyframes slide-recede {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--u) * -2)) scale(0.985);
+    filter: blur(6px);
+  }
+}
+
+@keyframes slide-recede-right {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--u) * 2)) scale(0.985);
+    filter: blur(6px);
+  }
+}
+
+/* Parts surface softly: a short rise out of a light blur */
+.rv {
+  animation: rv-rise 0.9s var(--ease-soft) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 140ms);
+}
+
+.deck-slide.from-left .rv {
+  animation-name: rv-rise;
+}
+
+@keyframes rv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * 1.1));
+    filter: blur(8px);
+  }
+}
+
+.sx-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kicker: a hairline trailing the section name */
+.sx-kicker::after {
+  content: "";
+  width: calc(var(--u) * 5);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(163, 173, 255, 0.55), transparent);
+  transform-origin: left;
+  animation: line-draw 1.2s 0.5s var(--ease-soft) backwards;
+}
+
+@keyframes line-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Cards: glass with a faint pen-to-tea edge; they lift a little on hover */
+.deck .sx-fact,
+.deck .sx-method,
+.deck .sx-card,
+.deck .sx-compare,
+.deck .sx-findings li {
+  border-color: transparent;
+  background:
+    linear-gradient(rgba(17, 23, 60, 0.78), rgba(11, 16, 44, 0.78)) padding-box,
+    linear-gradient(
+        140deg,
+        rgba(163, 173, 255, 0.38),
+        rgba(230, 233, 245, 0.07) 42%,
+        rgba(230, 233, 245, 0.04) 60%,
+        rgba(242, 163, 91, 0.3)
+      )
+      border-box;
+  box-shadow: 0 calc(var(--u) * 1) calc(var(--u) * 2.4) calc(var(--u) * -1.4) rgba(0, 0, 0, 0.6);
+  transition:
+    transform 0.6s var(--ease-soft),
+    box-shadow 0.6s var(--ease-soft);
+}
+
+.deck .sx-stat,
+.deck .sx-lr-card,
+.deck .sx-goal,
+.deck .sx-spot {
+  box-shadow: 0 calc(var(--u) * 1) calc(var(--u) * 2.4) calc(var(--u) * -1.4) rgba(0, 0, 0, 0.6);
+  transition:
+    transform 0.6s var(--ease-soft),
+    box-shadow 0.6s var(--ease-soft);
+}
+
+@media (hover: hover) {
+  .deck .sx-fact:hover,
+  .deck .sx-method:hover,
+  .deck .sx-card:hover,
+  .deck .sx-compare:hover,
+  .deck .sx-stat:hover,
+  .deck .sx-lr-card:hover {
+    transform: translateY(calc(var(--u) * -0.35));
+    box-shadow: 0 calc(var(--u) * 1.8) calc(var(--u) * 3.6) calc(var(--u) * -1.6) rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Big numbers carry a soft glow of their own colour */
+.sx-fact-num,
+.sx-huge {
+  filter: drop-shadow(0 0 calc(var(--u) * 1.4) rgba(242, 163, 91, 0.18));
+}
+
+.sx-huge,
+.sx-fact:first-child .sx-fact-num {
+  filter: drop-shadow(0 0 calc(var(--u) * 1.4) rgba(163, 173, 255, 0.22));
+}
+
+.sx-stat-num {
+  text-shadow: 0 0 calc(var(--u) * 2.4) rgba(163, 173, 255, 0.3);
+}
+
+/* Flow: the line draws itself before the steps land on it */
+.sx-flow::before {
+  transform-origin: left;
+  animation: line-draw 1.4s 0.3s cubic-bezier(0.65, 0, 0.35, 1) backwards;
+}
+
+.sx-flow-dot {
+  transition: box-shadow 0.6s var(--ease-soft);
+}
+
+.sx-flow li.is-end .sx-flow-dot {
+  animation: dot-glow 3.6s 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes dot-glow {
+  to {
+    box-shadow: 0 0 calc(var(--u) * 3.4) rgba(242, 163, 91, 0.75);
+  }
+}
+
+/* Bars: slower, smoother growth; the value arrives once the bar has */
+.sx-track i,
+.sx-stackbar span,
+.sx-meter i {
+  animation-duration: 1.3s;
+  animation-timing-function: var(--ease-soft);
+}
+
+.sx-track b {
+  animation: value-in 0.6s 1.1s var(--ease-soft) backwards;
+}
+
+@keyframes value-in {
+  from {
+    opacity: 0;
+    transform: translate(calc(-100% + var(--u) * 0.6), -50%);
+  }
+}
+
+.sx-bar-row {
+  transition: background-color 0.4s ease;
+}
+
+@media (hover: hover) {
+  .sx-bar-row:hover {
+    background: rgba(230, 233, 245, 0.04);
+  }
+}
+
+/* Cover: cubes float slowly and lean toward the pointer */
+.deck .sx-cube {
+  --rot: 0deg;
+  --d: 1;
+  transform: translate3d(
+      calc(var(--mx, 0) * var(--d) * var(--u) * -1),
+      calc(var(--my, 0) * var(--d) * var(--u) * -1),
+      0
+    )
+    rotate(var(--rot));
+  transition: transform 1.6s var(--ease-soft);
+  animation: cube-drift 9s ease-in-out infinite;
+}
+
+.deck .sx-cube.c1 {
+  --rot: -8deg;
+  --d: 1.6;
+}
+
+.deck .sx-cube.c2 {
+  --rot: 12deg;
+  --d: 2.4;
+  animation-delay: -3s;
+}
+
+.deck .sx-cube.c3 {
+  --d: 3.2;
+  animation-delay: -5s;
+}
+
+.deck .sx-cube.c4 {
+  --rot: 20deg;
+  --d: 2.8;
+  animation-delay: -1.5s;
+}
+
+.deck .sx-cube.c5 {
+  --d: 3.8;
+  animation-delay: -6.5s;
+}
+
+@keyframes cube-drift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 calc(var(--u) * -1.1);
+  }
+}
+
+.sx-cover-cubes {
+  animation: cubes-in 1.6s 0.35s var(--ease-soft) backwards;
+}
+
+@keyframes cubes-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * 2)) scale(0.96);
+  }
+}
+
+.sx-cover-cubes::before {
+  animation: lamp-breathe 7s ease-in-out infinite alternate;
+}
+
+@keyframes lamp-breathe {
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* First-slide hint */
+.deck-hint {
+  position: absolute;
+  bottom: calc(var(--u) * 1.9);
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.6);
+  transform: translateX(-50%);
+  font-size: calc(var(--u) * 0.85);
+  font-weight: 600;
+  color: var(--ink-3);
+  animation: hint-in 1s 2.2s var(--ease-soft) backwards;
+}
+
+.deck-hint kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: calc(var(--u) * 1.8);
+  height: calc(var(--u) * 1.6);
+  border: 1px solid var(--glass-line);
+  border-radius: calc(var(--u) * 0.35);
+  background: var(--glass);
+  font-family: inherit;
+  font-size: calc(var(--u) * 0.85);
+  color: var(--ink-2);
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(var(--u) * 0.6));
+  }
+}
+
+/* Progress: a soft glow riding the end of the bar */
+.deck-progress i {
+  position: relative;
+  transition: width 0.9s var(--ease-soft);
+}
+
+.deck-progress i::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: calc(var(--u) * 4);
+  height: calc(var(--u) * 1.4);
+  background: radial-gradient(closest-side, rgba(242, 163, 91, 0.55), transparent);
+  transform: translate(50%, -50%);
+}
+
+/* Control bar: one highlight slides between sections */
+.deck-sections {
+  position: relative;
+}
+
+.deck-sec-ind {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(163, 173, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(163, 173, 255, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.6s var(--ease-soft),
+    width 0.6s var(--ease-soft),
+    opacity 0.4s ease;
+}
+
+.deck-sec-ind.is-on {
+  opacity: 1;
+}
+
+.deck-sec {
+  position: relative;
+}
+
+.deck-sec.is-active {
+  background: none;
+}
+
+.deck-sec-n {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+.deck-btn.is-primary {
+  box-shadow: 0 0 0 0 rgba(163, 173, 255, 0);
+  transition: box-shadow 0.5s var(--ease-soft), background-color 0.2s ease, transform 0.2s ease;
+}
+
+.deck-btn.is-primary:hover:not(:disabled) {
+  box-shadow: 0 0 22px -4px rgba(163, 173, 255, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-stage::after,
+  .deck-slide.is-entering,
+  .deck-slide.is-leaving,
+  .rv,
+  .sx-kicker::after,
+  .sx-flow::before,
+  .sx-flow li.is-end .sx-flow-dot,
+  .sx-track b,
+  .deck .sx-cube,
+  .sx-cover-cubes,
+  .sx-cover-cubes::before,
+  .deck-hint {
+    animation: none;
+  }
+  .deck-slide.is-leaving {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Presentasi: composition pass. Heading at the top, the body of each slide
+   centred in the space that is left, notes resting at the bottom.
+   ========================================================================== */
+
+.deck-slide > .sx-title + *,
+.deck-slide > .sx-sub + * {
+  margin-top: auto;
+}
+
+.deck-slide > :last-child:not(.sx-note) {
+  margin-bottom: auto;
+}
+
+.deck-slide > .sx-title + .sx-sub {
+  margin-top: calc(var(--u) * -0.8);
+}
+
+.deck-slide > .sx-note {
+  margin-top: auto;
+}
+
+.sx-diskusi .sx-statement {
+  margin-top: auto;
+}
+
+/* Fact cards: number, sentence, source; no dead space */
+.sx-latar .sx-fact {
+  min-height: calc(var(--u) * 24);
+}
+
+.sx-latar .sx-fact-num {
+  font-size: calc(var(--u) * 5.2);
+}
+
+/* Theory flow: one connector between each pair of steps, drawn in turn */
+.sx-flow::before {
+  display: none;
+}
+
+.sx-teori .sx-flow {
+  --dot: calc(var(--u) * 4);
+  --gap: calc(var(--u) * 1.6);
+  gap: var(--gap);
+}
+
+.sx-teori .sx-flow li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--dot) / 2 - 1px);
+  left: calc(var(--dot) + var(--u) * 0.6);
+  width: calc(100% + var(--gap) - var(--dot) - var(--u) * 1.2);
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(163, 173, 255, 0.7), rgba(163, 173, 255, 0.25));
+  transform-origin: left;
+  animation: line-draw 0.9s var(--ease-soft) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 420ms);
+}
+
+.sx-teori .sx-flow li:nth-child(3)::after {
+  background: linear-gradient(90deg, rgba(163, 173, 255, 0.6), rgba(242, 163, 91, 0.7));
+}
+
+.sx-teori .sx-spot {
+  margin-top: calc(var(--u) * 3.6);
+}
+
+.deck-slide.is-leaving .sx-flow li::after {
+  animation: none;
+}
+
+/* Method cards: an icon, the label, the statement */
+.sx-desain .sx-method {
+  justify-content: flex-start;
+  gap: calc(var(--u) * 0.8);
+  min-height: calc(var(--u) * 21);
+  padding: calc(var(--u) * 2.2);
+}
+
+.sx-method-icon {
+  display: grid;
+  place-items: center;
+  width: calc(var(--u) * 4);
+  height: calc(var(--u) * 4);
+  margin-bottom: calc(var(--u) * 1.6);
+  border-radius: calc(var(--u) * 1);
+  background: linear-gradient(140deg, rgba(163, 173, 255, 0.22), rgba(163, 173, 255, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(163, 173, 255, 0.28);
+  color: var(--pen);
+}
+
+.sx-method-icon svg {
+  width: 52%;
+  height: 52%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sx-desain .sx-method:last-child .sx-method-icon {
+  background: linear-gradient(140deg, rgba(242, 163, 91, 0.24), rgba(242, 163, 91, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(242, 163, 91, 0.3);
+  color: var(--tea);
+}
+
+.sx-desain .sx-method-text {
+  font-size: calc(var(--u) * 1.75);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+/* Workload cards: number, unit, a bar for the share behind the mode */
+.sx-hasil-tugas .sx-stat {
+  min-height: calc(var(--u) * 26);
+  gap: calc(var(--u) * 1.2);
+  padding: calc(var(--u) * 2.4);
+}
+
+.sx-hasil-tugas .sx-stat-num {
+  gap: calc(var(--u) * 1.1);
+  margin-top: auto;
+  font-size: calc(var(--u) * 8);
+}
+
+.sx-hasil-tugas .sx-stat-num .sx-stat-unit {
+  font-size: calc(var(--u) * 1.35);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.sx-hasil-tugas .sx-meter {
+  margin-top: calc(var(--u) * 0.6);
+}
+
+.sx-hasil-tugas .sx-stat-foot {
+  font-size: calc(var(--u) * 1.2);
+  color: var(--ink-2);
+}
+
+/* Discussion headline: plain ink, the two key words in italic tea */
+.sx-statement {
+  max-width: 26ch;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--ink);
+}
+
+.sx-statement em {
+  color: var(--tea);
+  text-shadow: 0 0 calc(var(--u) * 2.4) rgba(242, 163, 91, 0.3);
+}
+
+.sx-diskusi .sx-grid-3 {
+  margin-top: calc(var(--u) * 2.6);
+  margin-bottom: auto;
+}
+
+.sx-diskusi .sx-card {
+  min-height: calc(var(--u) * 19);
+}
+
+/* Limitations: give the pairs a little more air */
+.sx-limitasi .sx-lr {
+  gap: calc(var(--u) * 1.6);
+}
+
+/* Footer pager: one tick per slide instead of a bar across the top */
+.deck-pager {
+  gap: calc(var(--u) * 1.2);
+}
+
+.deck-ticks {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.3);
+}
+
+.deck-ticks i {
+  width: calc(var(--u) * 0.9);
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(230, 233, 245, 0.16);
+  transition: background-color 0.5s ease, width 0.6s var(--ease-soft);
+}
+
+.deck-ticks i.is-past {
+  background: rgba(163, 173, 255, 0.45);
+}
+
+.deck-ticks i.is-now {
+  width: calc(var(--u) * 2.2);
+  background: linear-gradient(90deg, var(--pen), var(--tea));
+  box-shadow: 0 0 calc(var(--u) * 0.8) rgba(242, 163, 91, 0.45);
+}
+
+.deck-hint {
+  bottom: calc(var(--u) * 4.6);
+}
+
+/* Cover: the meta line sits on a quieter rule */
+.sx-cover-meta {
+  border-top-color: rgba(230, 233, 245, 0.1);
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .deck-slide > .sx-title + *,
+  .deck-slide > :last-child:not(.sx-note),
+  .deck-slide > .sx-note,
+  .sx-diskusi .sx-statement {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  .sx-teori .sx-flow li::after {
+    display: none;
+  }
+  .deck-ticks {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sx-teori .sx-flow li::after {
+    animation: none;
+  }
+}
+
+
+/* ==========================================================================
+   Presentasi: depth pass. A textured night background (grain, a sugar-cube
+   lattice, orbit rings) and darker, crisper cards
+   so nothing reads as a washed-out grey box.
+   ========================================================================== */
+
+.deck-stage::before {
+  display: none;
+}
+
+.deck-decor {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.deck-decor i {
+  position: absolute;
+  display: block;
+}
+
+/* Sugar-cube lattice, fading out from the top-right corner */
+.deck-lattice {
+  top: 0;
+  right: 0;
+  width: 62%;
+  height: 78%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='69' viewBox='0 0 40 69'%3E%3Cpath d='M20 0l20 11.5v23l-20 11.5l-20-11.5v-23zM0 11.5l20 11.5l20-11.5M20 23v23M0 34.5l20 11.5v23l-20 11.5l-20-11.5v-23zM-20 46.0l20 11.5l20-11.5M0 57.5v23M40 34.5l20 11.5v23l-20 11.5l-20-11.5v-23zM20 46.0l20 11.5l20-11.5M40 57.5v23M0 -34.5l20 11.5v23l-20 11.5l-20-11.5v-23zM-20 -23.0l20 11.5l20-11.5M0 -11.5v23M40 -34.5l20 11.5v23l-20 11.5l-20-11.5v-23zM20 -23.0l20 11.5l20-11.5M40 -11.5v23' fill='none' stroke='%23a3adff' stroke-width='0.7' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: calc(var(--u) * 3.4) calc(var(--u) * 5.865);
+  opacity: 0.2;
+  -webkit-mask-image: radial-gradient(70% 80% at 100% 0%, #000 0%, rgba(0, 0, 0, 0.35) 45%, transparent 75%);
+  mask-image: radial-gradient(70% 80% at 100% 0%, #000 0%, rgba(0, 0, 0, 0.35) 45%, transparent 75%);
+}
+
+/* Film grain keeps the large dark areas from looking flat */
+.deck-grain {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+}
+
+/* --- Cards: dark, crisp, lit from the top edge ------------------------- */
+
+.deck .sx-fact,
+.deck .sx-card,
+.deck .sx-compare,
+.deck .sx-findings li,
+.deck .sx-stat,
+.deck .sx-lr-card,
+.deck .sx-spot,
+.deck .sx-flow-card,
+.deck .sx-tile {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(27, 34, 86, 0.94), rgba(13, 18, 50, 0.94)) padding-box,
+    linear-gradient(
+        150deg,
+        rgba(163, 173, 255, 0.42),
+        rgba(163, 173, 255, 0.08) 38%,
+        rgba(230, 233, 245, 0.05) 62%,
+        rgba(242, 163, 91, 0.32)
+      )
+      border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 calc(var(--u) * 1.2) calc(var(--u) * 2.8) calc(var(--u) * -1.4) rgba(0, 0, 0, 0.7);
+  backdrop-filter: none;
+}
+
+/* Accent cards carry their colour on the top edge, not as a muddy tint */
+.deck .sx-stat,
+.deck .sx-lr-card.is-rec {
+  box-shadow:
+    inset 0 2px 0 rgba(163, 173, 255, 0.85),
+    0 calc(var(--u) * 1.2) calc(var(--u) * 2.8) calc(var(--u) * -1.4) rgba(0, 0, 0, 0.7);
+}
+
+.deck .sx-lr-card.is-lim {
+  box-shadow:
+    inset 0 2px 0 rgba(242, 163, 91, 0.85),
+    0 calc(var(--u) * 1.2) calc(var(--u) * 2.8) calc(var(--u) * -1.4) rgba(0, 0, 0, 0.7);
+}
+
+.deck .sx-spot {
+  background:
+    radial-gradient(60% 140% at 0% 50%, rgba(242, 163, 91, 0.16), transparent 70%) padding-box,
+    linear-gradient(180deg, rgba(27, 34, 86, 0.94), rgba(13, 18, 50, 0.94)) padding-box,
+    linear-gradient(120deg, rgba(242, 163, 91, 0.65), rgba(242, 163, 91, 0.08) 45%, rgba(163, 173, 255, 0.3))
+      border-box;
+}
+
+/* The aim of the study: the one light card on a dark slide */
+.deck .sx-goal {
+  border: 0;
+  background:
+    radial-gradient(90% 120% at 100% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    linear-gradient(135deg, #c9ceff 0%, #a3adff 55%, #8a94ee 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 calc(var(--u) * 1.6) calc(var(--u) * 4) calc(var(--u) * -1.2) rgba(124, 134, 240, 0.55);
+  color: #0b1030;
+  font-weight: 650;
+}
+
+.deck .sx-goal .sx-label {
+  color: rgba(11, 16, 48, 0.62);
+}
+
+/* --- Theory: each step on its own card below the dotted line ------------ */
+
+.sx-teori .sx-flow li {
+  gap: 0;
+}
+
+.sx-teori .sx-flow-dot {
+  margin-bottom: calc(var(--u) * 1.2);
+  background: #151b4d;
+  box-shadow: 0 0 0 calc(var(--u) * 0.45) rgba(12, 16, 46, 0.9);
+}
+
+.sx-flow-card {
+  display: grid;
+  align-content: start;
+  gap: calc(var(--u) * 0.5);
+  min-height: calc(var(--u) * 11.5);
+  padding: calc(var(--u) * 1.6) calc(var(--u) * 1.7);
+  border-radius: calc(var(--u) * 1);
+}
+
+.sx-teori .sx-flow li.is-end .sx-flow-card {
+  box-shadow:
+    inset 0 2px 0 rgba(242, 163, 91, 0.85),
+    0 calc(var(--u) * 1.2) calc(var(--u) * 2.8) calc(var(--u) * -1.4) rgba(0, 0, 0, 0.7);
+}
+
+.sx-teori .sx-flow-title {
+  font-size: calc(var(--u) * 1.9);
+}
+
+.sx-teori .sx-flow-text {
+  font-size: calc(var(--u) * 1.25);
+}
+
+.sx-tile {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1);
+  padding: calc(var(--u) * 2) calc(var(--u) * 2.2);
+  border-radius: calc(var(--u) * 1.2);
+  transition:
+    transform 0.6s var(--ease-soft),
+    box-shadow 0.6s var(--ease-soft);
+}
+
+@media (hover: hover) {
+  .deck .sx-tile:hover,
+  .deck .sx-flow-card:hover {
+    transform: translateY(calc(var(--u) * -0.35));
+  }
+}
+
+.sx-tile-label {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.7);
+  font-size: calc(var(--u) * 0.85);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.sx-tile-icon {
+  display: grid;
+  place-items: center;
+  width: calc(var(--u) * 2.4);
+  height: calc(var(--u) * 2.4);
+  border-radius: calc(var(--u) * 0.6);
+  background: rgba(163, 173, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(163, 173, 255, 0.28);
+  color: var(--pen);
+}
+
+.sx-tile-icon svg {
+  width: 58%;
+  height: 58%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sx-tile-title {
+  font-size: calc(var(--u) * 1.7);
+  font-weight: 720;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.sx-tile-text {
+  font-size: calc(var(--u) * 1.2);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* Survey: the order a respondent goes through, as a line of steps */
+.sx-tile.is-survey {
+  padding: calc(var(--u) * 2.2) calc(var(--u) * 2.6);
+}
+
+.sx-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: calc(var(--u) * 1);
+  margin-top: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.sx-steps li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.7);
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 1);
+  border-radius: calc(var(--u) * 0.7);
+  background: rgba(163, 173, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(163, 173, 255, 0.18);
+  font-size: calc(var(--u) * 1.1);
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--ink);
+  animation: rv-rise 0.8s var(--ease-soft) backwards;
+  animation-delay: calc(var(--i, 0) * 110ms + 200ms);
+}
+
+.sx-steps li + li::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(var(--u) * -1);
+  width: calc(var(--u) * 1);
+  height: 1px;
+  background: rgba(163, 173, 255, 0.45);
+}
+
+.sx-steps li span {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: calc(var(--u) * 1.8);
+  height: calc(var(--u) * 1.8);
+  border-radius: 50%;
+  background: var(--pen);
+  font-size: calc(var(--u) * 0.9);
+  font-weight: 800;
+  color: #0c1130;
+}
+
+.sx-steps li:nth-child(3) span {
+  background: #c9ceff;
+}
+
+.sx-steps li:last-child {
+  background: rgba(242, 163, 91, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(242, 163, 91, 0.3);
+}
+
+.sx-steps li:last-child span {
+  background: var(--tea);
+  color: #1a1206;
+}
+
+/* Leaving slides stay still */
+.deck-slide.is-leaving .sx-steps li {
+  animation: none;
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .sx-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sx-steps li + li::before {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sx-steps li {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Presentasi: final pass.
+   ========================================================================== */
+
+/* Orbit: hairline rings with a few slow beads. It lives in the corner above
+   the content on regular slides and circles the sugar cubes on the cover and
+   the closing slide, gliding between the two places. */
+.deck-orbit {
+  position: absolute;
+  top: calc(var(--u) * -18);
+  left: calc(var(--u) * 82);
+  width: calc(var(--u) * 36);
+  height: calc(var(--u) * 36);
+  overflow: visible;
+  transition:
+    top 1.4s var(--ease-soft),
+    left 1.4s var(--ease-soft),
+    width 1.4s var(--ease-soft),
+    height 1.4s var(--ease-soft),
+    opacity 1s ease;
+}
+
+.deck-stage[data-slide="judul"] .deck-orbit,
+.deck-stage[data-slide="penutup"] .deck-orbit {
+  top: calc(var(--u) * 5);
+  left: calc(var(--u) * 65);
+  width: calc(var(--u) * 38);
+  height: calc(var(--u) * 38);
+}
+
+.deck-orbit .o-ring {
+  fill: none;
+  stroke: rgba(163, 173, 255, 0.16);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.deck-orbit .o-1 {
+  stroke: rgba(163, 173, 255, 0.2);
+}
+
+.deck-orbit .o-2 {
+  stroke: rgba(163, 173, 255, 0.32);
+  stroke-dasharray: 1 5;
+  stroke-linecap: round;
+}
+
+.deck-orbit .o-3 {
+  stroke: rgba(242, 163, 91, 0.24);
+}
+
+.deck-orbit .o-4 {
+  stroke: rgba(163, 173, 255, 0.12);
+  stroke-dasharray: 4 6;
+}
+
+.deck-orbit .o-glow {
+  fill: rgba(163, 173, 255, 0.035);
+}
+
+.deck-orbit .o-bead {
+  fill: rgba(230, 233, 245, 0.55);
+}
+
+.deck-orbit .o-bead.is-tea {
+  fill: var(--tea);
+  filter: drop-shadow(0 0 1.6px rgba(242, 163, 91, 0.9));
+}
+
+.deck-orbit .o-bead.is-pen {
+  fill: var(--pen);
+  filter: drop-shadow(0 0 1.4px rgba(163, 173, 255, 0.9));
+}
+
+.deck-orbit .o-spin {
+  transform-origin: 0 0;
+  transform-box: view-box;
+}
+
+.deck-orbit .o-spin-a {
+  animation: orbit-turn 110s linear infinite;
+}
+
+.deck-orbit .o-spin-b {
+  animation: orbit-turn 160s linear infinite reverse;
+}
+
+@keyframes orbit-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Keep the cover and closing text clear of the orbit around the cubes */
+.sx-cover-meta,
+.sx-cover.is-end .sx-cover-meta {
+  max-width: 56%;
+}
+
+/* --- Method: three quiet facts, then the survey path ------------------- */
+
+.sx-specs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid rgba(230, 233, 245, 0.1);
+  border-bottom: 1px solid rgba(230, 233, 245, 0.1);
+}
+
+.sx-specs > div {
+  display: grid;
+  align-content: start;
+  gap: calc(var(--u) * 0.6);
+  padding: calc(var(--u) * 2) calc(var(--u) * 2.4) calc(var(--u) * 2.2);
+}
+
+.sx-specs > div:first-child {
+  padding-left: 0;
+}
+
+.sx-specs > div + div {
+  border-left: 1px solid rgba(230, 233, 245, 0.1);
+}
+
+.sx-specs dt {
+  font-size: calc(var(--u) * 0.85);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.sx-specs dd {
+  margin: 0;
+  font-size: calc(var(--u) * 2.2);
+  font-weight: 760;
+  font-stretch: 88%;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.sx-specs dd em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  letter-spacing: 0;
+  color: var(--pen);
+}
+
+.sx-specs p {
+  font-size: calc(var(--u) * 1.15);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.sx-specs p .is-pen,
+.sx-specs p .is-tea {
+  font-weight: 650;
+}
+
+.sx-desain .sx-tile.is-survey {
+  margin-top: calc(var(--u) * 2.4);
+}
+
+.sx-desain .sx-steps li {
+  padding: calc(var(--u) * 1) calc(var(--u) * 1.2);
+  font-size: calc(var(--u) * 1.25);
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .sx-specs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sx-specs > div {
+    padding-left: 0;
+  }
+  .sx-specs > div + div {
+    border-left: 0;
+    border-top: 1px solid rgba(230, 233, 245, 0.1);
+  }
+  .deck-stage[data-slide="judul"] .deck-orbit,
+  .deck-stage[data-slide="penutup"] .deck-orbit {
+    top: calc(var(--u) * 2);
+    left: calc(var(--u) * 52);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-orbit .o-spin,
+  .deck-orbit {
+    animation: none;
+    transition: none;
+  }
 }
