@@ -72,7 +72,7 @@ export const METODE = {
   },
   instrumen: {
     label: "Instrumen",
-    judul: "11 butir, skor 1–5",
+    judul: "11 pertanyaan, skor 1–5",
     tugas: 3,
     gula: 8,
   },

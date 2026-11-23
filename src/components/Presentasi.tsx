@@ -286,8 +286,8 @@ const SLIDES: Slide[] = [
             <dt>{METODE.instrumen.label}</dt>
             <dd>{METODE.instrumen.judul}</dd>
             <p>
-              <span className="is-pen">{METODE.instrumen.tugas} butir beban tugas</span> ·{" "}
-              <span className="is-tea">{METODE.instrumen.gula} butir konsumsi gula</span>
+              <span className="is-pen">{METODE.instrumen.tugas} pertanyaan beban tugas</span> ·{" "}
+              <span className="is-tea">{METODE.instrumen.gula} pertanyaan konsumsi gula</span>
             </p>
           </div>
           <div>
@@ -322,7 +322,7 @@ const SLIDES: Slide[] = [
     body: (
       <>
         <Kicker section={2} />
-        <Title>Siapa yang mengisi?</Title>
+        <Title>Klasifikasi Responden</Title>
         <div className="sx-resp">
           <div className="sx-resp-total rv" style={at(2)}>
             <p className="sx-huge"><CountUp text={String(N_RESPONDEN)} delay={200} /></p>
