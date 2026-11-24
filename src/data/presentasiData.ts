@@ -189,7 +189,7 @@ export const PERBANDINGAN_CATATAN =
 
 // Kata di antara *bintang* ditampilkan miring dan berwarna
 export const DISKUSI_UTAMA =
-  "Beban tugas dirasakan *tinggi*, tetapi tidak langsung diikuti konsumsi gula yang *tinggi*.";
+  "Beban tugas terasa *tinggi*, tetapi konsumsi gula tidak langsung ikut *meningkat*.";
 
 export const DISKUSI = [
   {
@@ -198,11 +198,11 @@ export const DISKUSI = [
   },
   {
     judul: "Gula terasa “dibutuhkan” saat nugas",
-    isi: "Kebutuhan minuman manis saat mengerjakan tugas punya mean tertinggi (2,91; modus setuju), sesuai konsep self-medication with sucrose dan temuan Ruman & Undarwati (2026).",
+    isi: "Kebutuhan minuman manis saat mengerjakan tugas memperoleh nilai mean tertinggi (2,91), dengan modus jawaban “setuju”. Temuan ini sejalan dengan konsep self-medication with sucrose serta penelitian Ruman dan Undarwati (2026).",
   },
   {
     judul: "Merasa butuh ≠ sering mengonsumsi",
-    isi: "Mahasiswi merasa lebih butuh gula, tetapi mahasiswa yang melaporkan konsumsi lebih sering. Kebutuhan yang dirasakan dan perilaku nyata tampak berbeda.",
+    isi: "Mahasiswi merasa lebih membutuhkan gula, tetapi mahasiswa justru melaporkan frekuensi konsumsi yang lebih tinggi. Hal ini menunjukkan bahwa kebutuhan yang dirasakan tidak selalu sejalan dengan perilaku konsumsi aktual.",
   },
 ];
 
